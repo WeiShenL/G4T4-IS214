@@ -29,7 +29,7 @@ Follow these steps to set up the FeastFinder application on your local machine:
   docker-compose down
 ```
 
-### 1. Install Dependencies
+### 2. Install Dependencies
 Navigate to the frontend directory:
 ```bash
 cd frontend
