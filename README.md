@@ -22,13 +22,14 @@ Ensure you have the following installed:
 
 Follow these steps to set up the FeastFinder application on your local machine:
 
-### 1. Clone the Repository
+### 1. Open terminal and run the following command (IGNORE FIRST):
 ```bash
-git clone https://github.com/yourusername/G4t4.git
-cd G4t4
+  cd backend
+  docker-compose up -d --build
+  docker-compose down
 ```
 
-### 2. Install Dependencies
+### 1. Install Dependencies
 Navigate to the frontend directory:
 ```bash
 cd frontend
@@ -42,7 +43,7 @@ npm run dev
 ```
 This will launch the application, typically at [http://localhost:5173](http://localhost:5173).
 
-## Project Structure
+## Project Structure (for now, change ltr)
 
 ```
 frontend/
@@ -54,7 +55,7 @@ frontend/
 │   ├── assets/        # CSS and other static files
 ```
 
-## Database
+## Database (for now, change ltr)
 
 The application uses [Supabase](https://supabase.com/) as its backend database service. The database structure includes:
 
@@ -63,7 +64,7 @@ The application uses [Supabase](https://supabase.com/) as its backend database s
 - User types
 - Authentication
 
-## Technology Stack
+## Technology Stack (for now, change ltr)
 
 - **Frontend Framework:** Vue.js
 - **UI Components:** Custom components with CSS
