@@ -1,0 +1,28 @@
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── CustomerDashboard.vue
+│   │   ├── DriverDashboard.vue
+│   │   ├── LoginForm.vue
+│   │   ├── SignupForm.vue
+│   │   └── HomePage.vue
+│   ├── views/
+│   │   ├── Home.vue
+│   │   ├── Login.vue
+│   │   ├── Signup.vue
+│   │   ├── CustomerDashboard.vue
+│   │   └── DriverDashboard.vue
+│   ├── services/
+│   │   └── supabase.js
+│   ├── assets/
+│   │   └── css/
+│   │       ├── styles.css
+│   │       └── dashboard.css
+│   ├── router/
+│   │   └── index.js
+│   └── main.js
+├── public/
+│   └── resources/  # For images
+├── index.html     # Single entry point
+├── vite.config.js
+└── package.json
