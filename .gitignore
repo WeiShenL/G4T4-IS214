@@ -27,5 +27,5 @@ yarn-error.log*
 *.sw?
 
 # OS files
-.DS_Store
+**/.DS_Store
 Thumbs.db
