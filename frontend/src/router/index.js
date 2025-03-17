@@ -7,6 +7,9 @@ import Signup from '@/views/Signup.vue';
 import CustomerDashboard from '@/views/CustomerDashboard.vue';
 import DriverDashboard from '@/views/DriverDashboard.vue';
 
+//driver
+import DriverView from '../views/DriverView.vue';
+
 const routes = [
   {
     path: '/',
@@ -34,7 +37,14 @@ const routes = [
     name: 'DriverDashboard',
     component: DriverDashboard,
     meta: { requiresAuth: true, userType: 'driver' }
-  }
+  },
+  
+  {
+    path: '/driver', // Route for the driver's dashboard
+    name: 'DriverDashboard',
+    component: DriverView,
+  },
+  
 ];
 
 const router = createRouter({
