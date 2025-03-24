@@ -6,6 +6,7 @@ import Login from '@/views/Login.vue';
 import Signup from '@/views/Signup.vue';
 import CustomerDashboard from '@/views/CustomerDashboard.vue';
 import DriverDashboard from '@/views/DriverDashboard.vue';
+import Restaurants from '@/views/Restaurants.vue'; // Add import for the new view
 
 const routes = [
   {
@@ -34,6 +35,12 @@ const routes = [
     name: 'DriverDashboard',
     component: DriverDashboard,
     meta: { requiresAuth: true, userType: 'driver' }
+  },
+  {
+    path: '/restaurants',
+    name: 'Restaurants',
+    component: Restaurants,
+    meta: { requiresAuth: true, userType: 'customer' } // Require customer auth
   }
 ];
 
