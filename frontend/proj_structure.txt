@@ -1,11 +1,5 @@
 frontend/
 ├── src/
-│   ├── components/
-│   │   ├── CustomerDashboard.vue
-│   │   ├── DriverDashboard.vue
-│   │   ├── LoginForm.vue
-│   │   ├── SignupForm.vue
-│   │   └── HomePage.vue
 │   ├── views/
 │   │   ├── Home.vue
 │   │   ├── Login.vue
@@ -21,6 +15,7 @@ frontend/
 │   ├── router/
 │   │   └── index.js
 │   └── main.js
+│   └── App.vue
 ├── public/
 │   └── resources/  # For images
 ├── index.html     # Single entry point
