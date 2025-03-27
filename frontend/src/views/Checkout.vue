@@ -213,7 +213,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getCurrentUser, signOut, supabaseClient } from '@/services/supabase';
 import { createOrder } from '@/services/menuService';
-import { initStripe, createCheckoutSession } from '@/services/stripeService';
+import { initStripe, createCheckoutSession, verifyPayment } from '@/services/stripeService';
 
 export default {
   name: 'Checkout',
@@ -241,7 +241,7 @@ export default {
     
     // Check if this is a return from Stripe Checkout
     const isReturnFromStripe = computed(() => {
-      return route.query.payment_intent && route.query.session_id;
+      return route.query.success === 'true' && route.query.session_id;
     });
     
     // Set default reservation time to 1 hour from now
@@ -376,7 +376,7 @@ export default {
         
         // Set up success and cancel URLs
         const currentUrl = window.location.origin;
-        const successUrl = `${currentUrl}/checkout/${orderInfo.value.restaurantId}?success=true`;
+        const successUrl = `${currentUrl}/checkout/${orderInfo.value.restaurantId}?success=true&session_id={CHECKOUT_SESSION_ID}`;
         const cancelUrl = `${currentUrl}/checkout/${orderInfo.value.restaurantId}?canceled=true`;
         
         console.log('Creating Stripe checkout session...');
@@ -411,8 +411,22 @@ export default {
       try {
         isLoading.value = true;
         
-        // Get payment intent ID from query param
-        const stripePaymentIntentId = route.query.payment_intent;
+        // sess id
+        const sessionId = route.query.session_id;
+
+        // throw exception
+        if (!sessionId){
+          throw new Error("Invalid session information")
+        }
+
+        // chk payment status
+        const verificationResult = await verifyPayment(sessionId);
+        if (!verificationResult.paymentIntent || verificationResult.paymentIntent.status !== 'succeeded') {
+          throw new Error('Payment verification failed');
+        }
+
+        // Get payment intent ID 
+        const stripePaymentIntentId = verificationResult.paymentIntent.id;
         
         if (!stripePaymentIntentId) {
           throw new Error('Invalid payment information');
@@ -484,11 +498,10 @@ export default {
           // Show success message
           orderPlaced.value = true;
           
-          // Clear query params from URL without reloading
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, newUrl);
-        } else {
-          throw new Error('Failed to create order');
+          // Redirect to reservations page after a delay
+          setTimeout(() => {
+            router.push('/reservations');
+          }, 3000); // 3 seconds to see the success message
         }
       } catch (error) {
         console.error('Error handling Stripe return:', error);

@@ -230,6 +230,9 @@ CREATE TABLE public.reservation (
   FOREIGN KEY (restaurant_id) REFERENCES public.restaurant(restaurant_id)
 );
 
+-- -- Reset the sequence for reservation table
+-- SELECT setval('reservation_reservation_id_seq', (SELECT COALESCE(MAX(reservation_id), 0) + 1 FROM reservation), false);
+
 -- Enable Row Level Security
 ALTER TABLE public.restaurant ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reservation ENABLE ROW LEVEL SECURITY;
