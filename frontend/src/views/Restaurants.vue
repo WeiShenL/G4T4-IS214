@@ -364,7 +364,46 @@ export default {
     // Submit reservation (not yet implemented)
     const submitReservation = async () => {
       try {
-
+        isSubmitting.value = true;
+        
+        // Create reservation object from the form data
+        const reservationDateTime = new Date(`${reservation.value.date}T${reservation.value.time}`);
+        
+        const reservationData = {
+          restaurant_id: selectedRestaurant.value.restaurant_id,
+          user_id: user.value.id,
+          status: 'Booked',
+          count: reservation.value.count,
+          price: null, // Will be set by the restaurant if needed
+          time: reservationDateTime.toISOString(),
+          special_requests: reservation.value.specialRequests
+        };
+        
+        // Call the API to create the reservation
+        const result = await createReservation(reservationData);
+        
+        if (result.success) {
+          // Close the modal
+          if (modal.value) {
+            modal.value.hide();
+          }
+          
+          // Show success message
+          alert('Reservation created successfully!');
+          
+          // Reset the form
+          reservation.value = {
+            restaurant_id: null,
+            user_id: user.value.id,
+            count: 2,
+            date: new Date().toISOString().split('T')[0],
+            time: '19:00',
+            status: 'Booked',
+            specialRequests: ''
+          };
+        } else {
+          throw new Error('Failed to create reservation');
+        }
       } catch (error) {
         console.error('Error booking reservation:', error);
         alert('Failed to book reservation. Please try again later.');

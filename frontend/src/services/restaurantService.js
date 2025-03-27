@@ -73,6 +73,8 @@ export const getUserReservations = async (userId) => {
     
     if (data.code === 200) {
       return data.data.reservations;
+    } else if (data.code === 404) {
+      return [];
     } else {
       throw new Error(data.message || 'Failed to fetch user reservations');
     }

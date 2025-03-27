@@ -200,3 +200,76 @@ CREATE POLICY "Service role can manage all user types"
 ON user_types FOR ALL
 USING (auth.role() = 'service_role')
 WITH CHECK (auth.role() = 'service_role');
+
+
+
+DROP TABLE IF EXISTS public.restaurant CASCADE;
+DROP TABLE IF EXISTS public.reservation CASCADE;
+
+-- Restaurant Table
+CREATE TABLE public.restaurant (
+  restaurant_id SERIAL PRIMARY KEY,
+  capacity INTEGER NOT NULL,
+  availability BOOLEAN NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  address TEXT NOT NULL,
+  rating VARCHAR(50) NOT NULL,
+  cuisine VARCHAR(255) NOT NULL
+);
+
+-- Reservation Table with UUID for Supabase user_id
+CREATE TABLE public.reservation (
+  reservation_id SERIAL PRIMARY KEY,
+  restaurant_id INTEGER NOT NULL,
+  user_id UUID REFERENCES auth.users(id),  -- Changed to UUID to match Supabase auth
+  table_no INTEGER,
+  status VARCHAR(255) NOT NULL,
+  count INTEGER DEFAULT 10,
+  price DECIMAL(10,2),
+  time TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (restaurant_id) REFERENCES public.restaurant(restaurant_id)
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.restaurant ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reservation ENABLE ROW LEVEL SECURITY;
+
+-- Restaurant Policies
+CREATE POLICY "Public read access for restaurants"
+ON public.restaurant FOR SELECT
+USING (true);  -- Everyone can read restaurant data
+
+CREATE POLICY "Admin restaurant management"
+ON public.restaurant FOR ALL
+USING (auth.role() = 'service_role' OR auth.role() = 'authenticated' AND auth.uid() IN (
+  SELECT user_id FROM user_types WHERE user_type = 'admin'
+));
+
+-- Reservation Policies
+CREATE POLICY "Users can view their own reservations"
+ON public.reservation FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own reservations"
+ON public.reservation FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own reservations"
+ON public.reservation FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage all reservations"
+ON public.reservation FOR ALL
+USING (auth.role() = 'service_role');
+
+-- Initial Restaurant Data
+INSERT INTO public.restaurant (restaurant_id, capacity, availability, name, address, rating, cuisine) VALUES
+(1, 50, true, 'Ocean View Diner', '123 Seaside Lane', '4.5', 'Seafood'),
+(2, 30, true, 'Mountain Grill', '456 Highland Rd', '4.7', 'Steakhouse'),
+(3, 100, true, 'City Central Buffet', '789 Downtown Ave', '4.2', 'Buffet'),
+(4, 25, false, 'Hidden Sushi Spot', '12 Sakura St', '4.9', 'Japanese'),
+(5, 40, true, 'Pasta Paradise', '33 Italian Blvd', '4.3', 'Italian'),
+(6, 60, false, 'BBQ Pit Masters', '55 Smokehouse Lane', '4.6', 'Barbecue');
+
+-- Reset sequence to continue after the last inserted ID
+SELECT setval('public.restaurant_restaurant_id_seq', (SELECT MAX(restaurant_id) FROM public.restaurant));
