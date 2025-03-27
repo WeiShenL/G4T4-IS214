@@ -22,13 +22,15 @@ CREATE DATABASE IF NOT EXISTS `restaurant_db` DEFAULT CHARACTER SET utf8 COLLATE
 USE `restaurant_db`;
 
 -- Restaurant table
-DROP TABLE IF EXISTS `restaurant`;
 CREATE TABLE IF NOT EXISTS `restaurant` (
     `restaurant_id` char(13) NOT NULL,
     `name` varchar(64) NOT NULL,
     `cuisine` varchar(64) NOT NULL,
     `rating` decimal(2,1) NOT NULL,
     `price_range` varchar(5) NOT NULL,
+    `meal_packages` text DEFAULT NULL,
+    `location_name` varchar(128) DEFAULT NULL,
+    `location_coordinates` varchar(64) DEFAULT NULL,
     PRIMARY KEY (`restaurant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -46,10 +48,10 @@ CREATE TABLE IF NOT EXISTS `reservation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Sample data for restaurants
-INSERT INTO `restaurant` (`restaurant_id`, `name`, `cuisine`, `rating`, `price_range`) VALUES
-('RES0012345678', 'The Gourmet Corner', 'French', 4.5, '$$$$'),
-('RES0098765432', 'Tokyo Sushi Master', 'Japanese', 4.8, '$$$'),
-('RES0055512345', 'Mama Mia Pizzeria', 'Italian', 4.3, '$$');
+INSERT INTO `restaurant` (`restaurant_id`, `name`, `cuisine`, `rating`, `price_range`, `meal_packages`, `location_name`, `location_coordinates`) VALUES
+('RES0012345678', 'The Gourmet Corner', 'French', 4.5, '$$$$', 'Parisian Delight: Croissant, Quiche, Coffee; French Feast: Coq au Vin, Ratatouille, Crème Brûlée', 'Paris Center', '48.8566,2.3522'),
+('RES0098765432', 'Tokyo Sushi Master', 'Japanese', 4.8, '$$$', 'Sushi Lover: Assorted Sushi, Miso Soup, Green Tea; Bento Box: Teriyaki Chicken, Rice, Tempura, Salad', 'Shibuya', '35.6895,139.6917'),
+('RES0055512345', 'Mama Mia Pizzeria', 'Italian', 4.3, '$$', 'Pizza Party: Margherita Pizza, Garlic Bread, Tiramisu; Pasta Perfection: Spaghetti Carbonara, Caesar Salad, Panna Cotta', 'Rome Downtown', '41.9028,12.4964');
 
 -- Sample data for reservations
 INSERT INTO `reservation` (`restaurant_id`, `customer_name`, `reservation_date`, `reservation_time`, `party_size`) VALUES
