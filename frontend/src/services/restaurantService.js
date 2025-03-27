@@ -1,10 +1,25 @@
-// Base URL for the API
-const API_BASE_URL = 'http://localhost:5001/api';
+// import Supabase client 
+import { supabaseClient } from './supabase';
+
+// base URLs for the API
+const RESTAURANT_API_URL = 'http://localhost:5001/api';
+const RESERVATION_API_URL = 'http://localhost:5002/api';
+
+// get auth headers
+const getAuthHeaders = async () => {
+  const { data } = await supabaseClient.auth.getSession();
+  const token = data.session?.access_token;
+  
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+};
 
 // Get all restaurants
 export const getAllRestaurants = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/restaurants`);
+    const response = await fetch(`${RESTAURANT_API_URL}/restaurants`);
     const data = await response.json();
     
     if (data.code === 200) {
@@ -21,7 +36,7 @@ export const getAllRestaurants = async () => {
 // Get restaurant by ID
 export const getRestaurantById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/restaurants/${id}`);
+    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/${id}`);
     const data = await response.json();
     
     if (data.code === 200) {
@@ -40,7 +55,7 @@ export const getRestaurantById = async (id) => {
 // Create a reservation
 export const createReservation = async (reservationData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/reservations`, {
+    const response = await fetch(`${RESTAURANT_API_URL}/reservations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -68,7 +83,17 @@ export const createReservation = async (reservationData) => {
 // Get user reservations
 export const getUserReservations = async (userId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/reservations/user/${userId}`);
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    const headers = await getAuthHeaders();
+    
+    // Pass userId as a string
+    const response = await fetch(`${RESERVATION_API_URL}/reservations/user/${userId}`, {
+      headers
+    });
+    
     const data = await response.json();
     
     if (data.code === 200) {
@@ -86,18 +111,35 @@ export const getUserReservations = async (userId) => {
 
 // Get restaurants by availability
 export const getRestaurantsByAvailability = async (availability) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/restaurants/availability/${availability}`);
-      const data = await response.json();
-      if (data.code === 200) {
-        return data.data.restaurants;
-      } else if (data.code === 404) {
-        return [];
-      } else {
-        throw new Error(data.message || 'Failed to fetch restaurants by availability');
-      }
-    } catch (error) {
-      console.error('Error fetching restaurants by availability:', error);
-      throw error;
+  try {
+    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/${availability}`);
+    const data = await response.json();
+    if (data.code === 200) {
+      return data.data.restaurants;
+    } else if (data.code === 404) {
+      return [];
+    } else {
+      throw new Error(data.message || 'Failed to fetch restaurants by availability');
     }
-  };
+  } catch (error) {
+    console.error('Error fetching restaurants by availability:', error);
+    throw error;
+  }
+};
+
+export const getRestaurantsByCuisine = async (cuisine) => {
+  try {
+    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/cuisine/${cuisine}`);
+    const data = await response.json();
+    if (data.code === 200) {
+      return data.data.restaurants;
+    } else if (data.code === 404) {
+      return [];
+    } else {
+      throw new Error(data.message || 'Failed to fetch restaurants by cuisine');
+    }
+  } catch (error) {
+    console.error('Error fetching restaurants by cuisine:', error);
+    throw error;
+  }
+};

@@ -184,29 +184,37 @@
       const selectedReservation = ref(null);
       const reservationModal = ref(null);
       
-      // Load data when component mounts
+      // data load when component mount
       onMounted(async () => {
         try {
-          // Initialize Bootstrap modal
+          // bootstrap modal
           if (typeof bootstrap !== 'undefined') {
             reservationModal.value = new bootstrap.Modal(document.getElementById('reservationModal'));
           }
           
+          // load user data first
           await loadUserData();
-          await loadRestaurants();
-          await loadReservations();
+          
+          // proceed with loading other data once user data was loaded successfully
+          if (user.value) {
+            await Promise.all([
+              loadRestaurants(),
+              loadReservations()
+            ]);
+          }
         } catch (error) {
           console.error('Error during initialization:', error);
           errorMessage.value = 'An error occurred while loading the page. Please try again.';
+          
         } finally {
           isLoading.value = false;
         }
       });
       
-      // Load user data
+      // load user data
       const loadUserData = async () => {
         try {
-          // Check if user is logged in
+          // logged in>?
           const currentUser = await getCurrentUser();
           
           if (!currentUser) {
@@ -255,16 +263,24 @@
       // Load user's reservations
       const loadReservations = async () => {
         try {
-          if (!user.value || !user.value.id) return;
+          if (!user.value || !user.value.id) {
+            console.warn('User ID not available yet, skipping reservation loading');
+            return; // Skip loading if user ID is not available yet
+          }
           
-          const userReservations = await getUserReservations(user.value.id);
+          console.log('Loading reservations for user ID:', user.value.id);
+          
+          const userReservations = await getUserReservations(user.value.id.toString());
           reservations.value = userReservations;
+          
+          console.log('Loaded reservations:', reservations.value);
         } catch (error) {
           console.error('Error loading reservations:', error);
           errorMessage.value = 'Failed to load your reservations. Please try again later.';
-          throw error;
+          // Don't throw the error, just handle it here
         }
       };
+
       
       // Format date from ISO string
       const formatDate = (isoString) => {
