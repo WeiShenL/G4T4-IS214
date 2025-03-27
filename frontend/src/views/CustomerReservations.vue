@@ -63,6 +63,8 @@
                       <th>Date</th>
                       <th>Time</th>
                       <th>Party Size</th>
+                      <th>Table No.</th>
+                      <th>Price</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -73,6 +75,8 @@
                       <td>{{ formatDate(reservation.time) }}</td>
                       <td>{{ formatTime(reservation.time) }}</td>
                       <td>{{ reservation.count }}</td>
+                      <td>{{ reservation.table_no || 'TBD' }}</td>
+                      <td>${{ reservation.price ? reservation.price.toFixed(2) : '0.00' }}</td>
                       <td>
                         <span 
                           class="badge"
@@ -83,10 +87,10 @@
                       </td>
                       <td>
                         <button 
-                          class="btn btn-sm btn-outline-primary"
-                          @click="viewReservation(reservation)"
+                          class="btn btn-sm btn-outline-danger"
+                          @click="cancelReservation(reservation)"
                         >
-                          Details
+                          Cancel Reservation
                         </button>
                       </td>
                     </tr>
@@ -110,55 +114,21 @@
         </div>
       </div>
       
-      <!-- Reservation Details Modal -->
-      <div class="modal fade" id="reservationModal" tabindex="-1" aria-labelledby="reservationModalLabel" aria-hidden="true">
+      <!-- Cancellation Confirmation Modal -->
+      <div class="modal fade" id="cancellationModal" tabindex="-1" aria-labelledby="cancellationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
           <div class="modal-content" v-if="selectedReservation">
             <div class="modal-header">
-              <h5 class="modal-title" id="reservationModalLabel">Reservation Details</h5>
+              <h5 class="modal-title" id="cancellationModalLabel">Confirm Cancellation</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-              <div class="reservation-details">
-                <div class="detail-item">
-                  <span class="detail-label">Restaurant:</span>
-                  <span class="detail-value">{{ getRestaurantName(selectedReservation.restaurant_id) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Date:</span>
-                  <span class="detail-value">{{ formatDate(selectedReservation.time) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Time:</span>
-                  <span class="detail-value">{{ formatTime(selectedReservation.time) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Party Size:</span>
-                  <span class="detail-value">{{ selectedReservation.count }} people</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Status:</span>
-                  <span class="detail-value">
-                    <span 
-                      class="badge"
-                      :class="getStatusClass(selectedReservation.status)"
-                    >
-                      {{ selectedReservation.status }}
-                    </span>
-                  </span>
-                </div>
-                <div class="detail-item" v-if="selectedReservation.table_no">
-                  <span class="detail-label">Table Number:</span>
-                  <span class="detail-value">{{ selectedReservation.table_no }}</span>
-                </div>
-                <div class="detail-item" v-if="selectedReservation.price">
-                  <span class="detail-label">Estimated Price:</span>
-                  <span class="detail-value">${{ selectedReservation.price.toFixed(2) }}</span>
-                </div>
-              </div>
+              <p>Are you sure you want to cancel your reservation at <strong>{{ getRestaurantName(selectedReservation.restaurant_id) }}</strong> on {{ formatDate(selectedReservation.time) }} at {{ formatTime(selectedReservation.time) }}?</p>
+              <p class="text-danger">This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Reservation</button>
+              <button type="button" class="btn btn-danger" @click="confirmCancellation">Confirm Cancellation</button>
             </div>
           </div>
         </div>
@@ -182,14 +152,14 @@
       const isLoading = ref(true);
       const errorMessage = ref('');
       const selectedReservation = ref(null);
-      const reservationModal = ref(null);
+      const cancellationModal = ref(null);
       
       // data load when component mount
       onMounted(async () => {
         try {
           // bootstrap modal
           if (typeof bootstrap !== 'undefined') {
-            reservationModal.value = new bootstrap.Modal(document.getElementById('reservationModal'));
+            cancellationModal.value = new bootstrap.Modal(document.getElementById('cancellationModal'));
           }
           
           // load user data first
@@ -318,10 +288,17 @@
         }
       };
       
-      // Show reservation details
-      const viewReservation = (reservation) => {
+      // Handle reservation cancellation
+      const cancelReservation = (reservation) => {
         selectedReservation.value = reservation;
-        reservationModal.value.show();
+        cancellationModal.value.show();
+      };
+      
+      // Confirm cancellation
+      const confirmCancellation = async () => {
+        alert('i love ESD a lot esp my ....!!!!');
+        
+        cancellationModal.value.hide();
       };
       
       // Logout function
@@ -349,37 +326,28 @@
         formatTime,
         getRestaurantName,
         getStatusClass,
-        viewReservation,
+        cancelReservation,
+        confirmCancellation,
         logout
       };
     }
   };
-  </script>
-  
-  <style scoped>
-  .reservation-details {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .detail-item {
-    display: flex;
-    border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 10px;
-  }
-  
-  .detail-label {
-    font-weight: 600;
-    width: 40%;
-    color: #555;
-  }
-  
-  .detail-value {
-    width: 60%;
-  }
-  
-  .badge {
-    padding: 6px 10px;
-  }
-  </style>
+</script>
+
+<style scoped>
+.badge {
+  padding: 6px 10px;
+}
+
+/* Add some button styling */
+.btn-outline-danger {
+  transition: all 0.3s ease;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3);
+}
+</style>

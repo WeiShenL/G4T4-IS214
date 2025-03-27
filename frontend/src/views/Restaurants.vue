@@ -281,10 +281,9 @@ export default {
       router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
     };
     
-    // View restaurant details
+    // restaurant details pg
     const viewRestaurantDetails = (restaurant) => {
-      // In a complete implementation, this would navigate to a details page
-      // For now, let's also redirect to the menu page
+      // for now, redirect to the menu page instead of having a details pg
       router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
     };
     

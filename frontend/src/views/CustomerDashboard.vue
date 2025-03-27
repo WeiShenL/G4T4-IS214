@@ -127,23 +127,23 @@ export default {
       },
       {
         icon: 'fas fa-list-alt',
-        title: 'View My Reservations',
+        title: 'View My Table Reservations',
         link: '/reservations',
-        linkText: 'See Bookings'
+        linkText: 'See Table Bookings'
       },
-      // yet to change 
+      // yet to change link
       {
         icon: 'fas fa-utensils',
         title: 'Order Food for Delivery',
         link: '/restaurants',
         linkText: 'Browse Restaurants'
       },
-      // placeholder pg
+      // yet to change link
       {
-        icon: 'fas fa-star',
-        title: 'Favorites',
-        link: '/favorites',
-        linkText: 'Your Favorite Places'
+        icon: 'fas fa-list-alt',
+        title: 'View My Takeaway Orders',
+        link: '/reservations',
+        linkText: 'See Orders'
       }
     ];
     
