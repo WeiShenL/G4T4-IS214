@@ -15,8 +15,8 @@
                 <span v-else>Loading...</span>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><router-link class="dropdown-item" to="/customer-profile"><i class="fas fa-user-cog"></i> My Profile</router-link></li>
-                <li><router-link class="dropdown-item" to="/customer-orders"><i class="fas fa-receipt"></i> My Orders</router-link></li>
+                <li><router-link class="dropdown-item" to="/customer-dashboard"><i class="fas fa-home"></i> Dashboard</router-link></li>
+                <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-calendar-check"></i> My Reservations</router-link></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" @click.prevent="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
               </ul>
@@ -126,7 +126,7 @@
                   @click="bookRestaurant(restaurant)"
                   :disabled="!restaurant.availability"
                 >
-                  Book a Table
+                  View Menu & Order (& Book)
                 </button>
                 <button class="btn btn-outline-primary btn-sm" @click="viewRestaurantDetails(restaurant)">
                   View Details
@@ -144,57 +144,14 @@
         </div>
       </div>
     </div>
-    
-    <!-- Book Restaurant Modal -->
-    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true" ref="bookingModal">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="bookingModalLabel">Book a Table at {{ selectedRestaurant?.name }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form @submit.prevent="submitReservation">
-              <div class="mb-3">
-                <label for="partySize" class="form-label">Number of People</label>
-                <input type="number" class="form-control" id="partySize" v-model="reservation.count" min="1" :max="selectedRestaurant?.capacity || 10" required>
-              </div>
-              <div class="mb-3">
-                <label for="reservationDate" class="form-label">Date</label>
-                <input type="date" class="form-control" id="reservationDate" v-model="reservation.date" required>
-              </div>
-              <div class="mb-3">
-                <label for="reservationTime" class="form-label">Time</label>
-                <input type="time" class="form-control" id="reservationTime" v-model="reservation.time" required>
-              </div>
-              <div class="mb-3">
-                <label for="specialRequests" class="form-label">Special Requests (Optional)</label>
-                <textarea class="form-control" id="specialRequests" rows="3" v-model="reservation.specialRequests"></textarea>
-              </div>
-              <div class="d-flex justify-content-end">
-                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-                  <span v-if="isSubmitting">
-                    <i class="fas fa-spinner fa-spin"></i> Booking...
-                  </span>
-                  <span v-else>
-                    Confirm Booking
-                  </span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut, getCurrentUser } from '@/services/supabase';
-import { getAllRestaurants, createReservation, getRestaurantsByAvailability } from '@/services/restaurantService';
+import { getAllRestaurants, getRestaurantsByAvailability } from '@/services/restaurantService';
 
 export default {
   name: 'Restaurants',
@@ -209,21 +166,6 @@ export default {
     const cuisineFilter = ref('');
     const availabilityFilter = ref('');
     
-    // Modal and reservation related refs
-    const bookingModal = ref(null);
-    const modal = ref(null);
-    const selectedRestaurant = ref(null);
-    const isSubmitting = ref(false);
-    const reservation = ref({
-      restaurant_id: null,
-      user_id: null,
-      count: 2,
-      date: new Date().toISOString().split('T')[0], // tdy
-      time: '19:00',
-      status: 'Booked',
-      specialRequests: ''
-    });
-    
     // Computed property to get unique cuisines
     const availableCuisines = computed(() => {
       const cuisines = restaurants.value.map(r => r.cuisine);
@@ -233,11 +175,6 @@ export default {
     // Load user data and restaurants when component mounts
     onMounted(async () => {
       try {
-        // Initialize Bootstrap modal
-        if (typeof bootstrap !== 'undefined') {
-          modal.value = new bootstrap.Modal(document.getElementById('bookingModal'));
-        }
-        
         await loadUserData();
         await loadRestaurants();
       } catch (error) {
@@ -245,13 +182,6 @@ export default {
         errorMessage.value = 'An error occurred while loading the page. Please try again.';
       } finally {
         isLoading.value = false;
-      }
-    });
-    
-    // Cleanup on component unmount
-    onUnmounted(() => {
-      if (modal.value) {
-        modal.value.dispose();
       }
     });
     
@@ -287,9 +217,6 @@ export default {
           postalCode: profileData.postal_code,
           id: profileData.id
         };
-        
-        // Set user_id in reservation object
-        reservation.value.user_id = currentUser.id;
       } catch (error) {
         console.error('Error loading user data:', error);
         throw error;
@@ -348,68 +275,17 @@ export default {
       }
     };
     
-    // Book restaurant function (not yet implemented)
+    // Navigate to the restaurant menu page
     const bookRestaurant = (restaurant) => {
-      selectedRestaurant.value = restaurant;
-      reservation.value.restaurant_id = restaurant.restaurant_id;
-      
+      // Navigate to the restaurant menu page
+      router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
     };
     
-    // View restaurant details function (not yet implemented)
+    // View restaurant details
     const viewRestaurantDetails = (restaurant) => {
-      // navigate to a details page
-      router.push(`/restaurant-details/${restaurant.restaurant_id}`);
-    };
-    
-    // Submit reservation (not yet implemented)
-    const submitReservation = async () => {
-      try {
-        isSubmitting.value = true;
-        
-        // Create reservation object from the form data
-        const reservationDateTime = new Date(`${reservation.value.date}T${reservation.value.time}`);
-        
-        const reservationData = {
-          restaurant_id: selectedRestaurant.value.restaurant_id,
-          user_id: user.value.id,
-          status: 'Booked',
-          count: reservation.value.count,
-          price: null, // Will be set by the restaurant if needed
-          time: reservationDateTime.toISOString(),
-          special_requests: reservation.value.specialRequests
-        };
-        
-        // Call the API to create the reservation
-        const result = await createReservation(reservationData);
-        
-        if (result.success) {
-          // Close the modal
-          if (modal.value) {
-            modal.value.hide();
-          }
-          
-          // Show success message
-          alert('Reservation created successfully!');
-          
-          // Reset the form
-          reservation.value = {
-            restaurant_id: null,
-            user_id: user.value.id,
-            count: 2,
-            date: new Date().toISOString().split('T')[0],
-            time: '19:00',
-            status: 'Booked',
-            specialRequests: ''
-          };
-        } else {
-          throw new Error('Failed to create reservation');
-        }
-      } catch (error) {
-        console.error('Error booking reservation:', error);
-        alert('Failed to book reservation. Please try again later.');
-      } finally {
-        isSubmitting.value = false;
-      }
+      // In a complete implementation, this would navigate to a details page
+      // For now, let's also redirect to the menu page
+      router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
     };
     
     // Logout function
@@ -437,14 +313,9 @@ export default {
       cuisineFilter,
       availabilityFilter,
       availableCuisines,
-      bookingModal,
-      selectedRestaurant,
-      reservation,
-      isSubmitting,
       filterRestaurants,
       bookRestaurant,
       viewRestaurantDetails,
-      submitReservation,
       logout
     };
   }

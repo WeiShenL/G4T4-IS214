@@ -6,7 +6,10 @@ import Login from '@/views/Login.vue';
 import Signup from '@/views/Signup.vue';
 import CustomerDashboard from '@/views/CustomerDashboard.vue';
 import DriverDashboard from '@/views/DriverDashboard.vue';
-import Restaurants from '@/views/Restaurants.vue'; // Add import for the new view
+import Restaurants from '@/views/Restaurants.vue'; 
+
+import RestaurantMenu from '@/views/RestaurantMenu.vue';
+import Checkout from '@/views/Checkout.vue';
 
 const routes = [
   {
@@ -46,6 +49,18 @@ const routes = [
     path: '/reservations',
     name: 'CustomerReservations',
     component: () => import('@/views/CustomerReservations.vue'),
+    meta: { requiresAuth: true, userType: 'customer' }
+  },
+  {
+    path: '/restaurant/:id/menu',
+    name: 'RestaurantMenu',
+    component: RestaurantMenu,
+    meta: { requiresAuth: true, userType: 'customer' }
+  },
+  {
+    path: '/checkout/:id',
+    name: 'Checkout',
+    component: Checkout,
     meta: { requiresAuth: true, userType: 'customer' }
   }
 ];
