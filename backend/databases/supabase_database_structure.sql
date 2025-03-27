@@ -226,7 +226,8 @@ CREATE TABLE public.reservation (
   status VARCHAR(255) NOT NULL,
   count INTEGER DEFAULT 10,
   price DECIMAL(10,2),
-  time TIMESTAMP DEFAULT NOW(),
+  time TIMESTAMP,
+  stripe_payment_id VARCHAR(255),
   FOREIGN KEY (restaurant_id) REFERENCES public.restaurant(restaurant_id)
 );
 
