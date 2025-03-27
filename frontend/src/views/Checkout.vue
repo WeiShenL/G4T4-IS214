@@ -33,8 +33,8 @@
         <div class="row mb-4">
           <div class="col-12">
             <div class="welcome-card">
-              <h2>Checkout</h2>
-              <p>Complete your order</p>
+              <h2>Checkout & Table Reservation</h2>
+              <p>Complete your reservation and pre-order</p>
             </div>
           </div>
         </div>
@@ -54,13 +54,13 @@
         
         <!-- Order Placed Success Message -->
         <div v-if="orderPlaced" class="alert alert-success" role="alert">
-          <h4 class="alert-heading">Order Placed Successfully!</h4>
-          <p>Your order has been placed and is being processed. Thank you for your purchase!</p>
+          <h4 class="alert-heading">Reservation & Pre-Order Placed Successfully!</h4>
+          <p>Your table has been reserved and your food pre-order has been placed. Thank you!</p>
           <hr>
           <p class="mb-0">Payment ID: {{ paymentId }}</p>
           <div class="mt-3">
-            <router-link to="/customer-dashboard" class="btn btn-primary">
-              Return to Dashboard
+            <router-link to="/reservations" class="btn btn-primary">
+              View My Reservations
             </router-link>
           </div>
         </div>
@@ -103,21 +103,60 @@
             </div>
           </div>
           
-          <!-- Delivery Info and Checkout Button -->
+          <!-- Reservation Info and Checkout Button -->
           <div class="col-md-7">
             <div class="card">
               <div class="card-header">
-                <h3 class="mb-0">Delivery Information</h3>
+                <h3 class="mb-0">Reservation Information</h3>
               </div>
               <div class="card-body">
                 <div class="mb-3">
-                  <label for="deliveryAddress" class="form-label">Delivery Address</label>
-                  <textarea class="form-control" id="deliveryAddress" v-model="deliveryAddress" rows="2" required></textarea>
+                  <label for="partySize" class="form-label">Number of People</label>
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    id="partySize" 
+                    v-model="partySize" 
+                    min="1" 
+                    max="20" 
+                    required
+                  >
+                  <small class="text-muted">Please specify how many people will be dining</small>
                 </div>
                 
                 <div class="mb-3">
-                  <label for="deliveryInstructions" class="form-label">Delivery Instructions (Optional)</label>
-                  <textarea class="form-control" id="deliveryInstructions" v-model="deliveryInstructions" rows="2" placeholder="E.g., Leave at door, call upon arrival, etc."></textarea>
+                  <label for="preferredTable" class="form-label">Preferred Table Number</label>
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    id="preferredTable" 
+                    v-model="preferredTable" 
+                    min="1"
+                    required
+                  >
+                  <small class="text-muted">Please fill in</small>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="reservationDateTime" class="form-label">Reservation Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    class="form-control" 
+                    id="reservationDateTime" 
+                    v-model="reservationDateTime" 
+                    required
+                  >
+                </div>
+                
+                <div class="mb-3">
+                  <label for="specialRequests" class="form-label">Special Requests (Optional)</label>
+                  <textarea 
+                    class="form-control" 
+                    id="specialRequests" 
+                    v-model="specialRequests" 
+                    rows="2" 
+                    placeholder="E.g., Birthday celebration, allergies, etc."
+                  ></textarea>
                 </div>
                 
                 <div v-if="paymentError" class="alert alert-danger mb-3">
@@ -126,10 +165,15 @@
                 
                 <div class="stripe-info alert alert-info mb-3">
                   <i class="fas fa-info-circle me-2"></i>
-                  When you click "Proceed to Payment", you'll be redirected to Stripe's secure checkout page to complete your payment.
+                  When you click "Proceed to Payment", you'll be redirected to Stripe's secure checkout page to complete your payment and confirm your reservation.
                 </div>
                 
-                <button type="button" class="btn btn-primary w-100" @click="proceedToStripeCheckout" :disabled="isSubmitting || !deliveryAddress">
+                <button 
+                  type="button" 
+                  class="btn btn-primary w-100" 
+                  @click="proceedToStripeCheckout" 
+                  :disabled="isSubmitting || !partySize || !reservationDateTime"
+                >
                   <span v-if="isSubmitting">
                     <i class="fas fa-spinner fa-spin"></i> Processing...
                   </span>
@@ -167,7 +211,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { getCurrentUser, signOut } from '@/services/supabase';
+import { getCurrentUser, signOut, supabaseClient } from '@/services/supabase';
 import { createOrder } from '@/services/menuService';
 import { initStripe, createCheckoutSession } from '@/services/stripeService';
 
@@ -185,8 +229,12 @@ export default {
     const isSubmitting = ref(false);
     const orderPlaced = ref(false);
     const paymentId = ref('');
-    const deliveryAddress = ref('');
-    const deliveryInstructions = ref('');
+    
+    // Reservation fields
+    const partySize = ref(2); // Default to 2 people
+    const preferredTable = ref('');
+    const reservationDateTime = ref('');
+    const specialRequests = ref('');
     
     // Get restaurant ID from route params
     const restaurantId = parseInt(route.params.id);
@@ -195,6 +243,22 @@ export default {
     const isReturnFromStripe = computed(() => {
       return route.query.payment_intent && route.query.session_id;
     });
+    
+    // Set default reservation time to 1 hour from now
+    const setDefaultReservationTime = () => {
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+      now.setMinutes(0); // Round to the nearest hour
+      
+      // Format for datetime-local input
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      
+      reservationDateTime.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
     
     // Load data when component mounts
     onMounted(async () => {
@@ -209,6 +273,9 @@ export default {
         
         // Load user data
         await loadUserData();
+        
+        // Set default reservation time
+        setDefaultReservationTime();
         
         // If returning from Stripe, process the payment
         if (isReturnFromStripe.value) {
@@ -249,11 +316,6 @@ export default {
           id: currentUser.id,
           customerName: currentUser.user_metadata?.name || 'Customer'
         };
-        
-        // Pre-fill delivery address if available from profile
-        if (currentUser.user_metadata?.address) {
-          deliveryAddress.value = currentUser.user_metadata.address;
-        }
       } catch (error) {
         console.error('Error loading user data:', error);
         throw error;
@@ -279,18 +341,25 @@ export default {
           throw new Error('Missing order or user information');
         }
         
-        // Validate delivery address
-        if (!deliveryAddress.value) {
-          paymentError.value = 'Please enter a delivery address';
+        // Validate reservation details
+        if (!partySize.value) {
+          paymentError.value = 'Please specify the number of people for your reservation';
+          return;
+        }
+        
+        if (!reservationDateTime.value) {
+          paymentError.value = 'Please select a date and time for your reservation';
           return;
         }
         
         isSubmitting.value = true;
         paymentError.value = '';
         
-        // Store delivery info in localStorage for after Stripe return
-        localStorage.setItem('delivery_address', deliveryAddress.value);
-        localStorage.setItem('delivery_instructions', deliveryInstructions.value || '');
+        // Store reservation info in localStorage for after Stripe return
+        localStorage.setItem('reservation_party_size', partySize.value);
+        localStorage.setItem('reservation_table_no', preferredTable.value || '');
+        localStorage.setItem('reservation_date_time', reservationDateTime.value);
+        localStorage.setItem('reservation_special_requests', specialRequests.value || '');
         
         // Save the total amount for verification later
         localStorage.setItem('stripe_amount', calculateTotal());
@@ -357,11 +426,13 @@ export default {
         
         orderInfo.value = JSON.parse(storedOrderInfo);
         
-        // Get delivery info from localStorage
-        const storedAddress = localStorage.getItem('delivery_address');
+        // Get reservation info from localStorage
+        const storedPartySize = localStorage.getItem('reservation_party_size');
+        const storedTableNo = localStorage.getItem('reservation_table_no');
+        const storedDateTime = localStorage.getItem('reservation_date_time');
         
-        if (!storedAddress) {
-          throw new Error('Delivery information not found');
+        if (!storedPartySize || !storedDateTime) {
+          throw new Error('Reservation information not found');
         }
         
         // Create the order with payment ID
@@ -377,11 +448,33 @@ export default {
         console.log('Creating order with payment ID:', stripePaymentIntentId);
         const result = await createOrder(order);
         
+        // Create the reservation in the database
+        const reservation = {
+          restaurant_id: orderInfo.value.restaurantId,
+          user_id: user.value.id,
+          table_no: storedTableNo || null,
+          status: 'Booked',
+          count: parseInt(storedPartySize),
+          price: calculateTotal(),
+          time: new Date(storedDateTime).toISOString()
+        };
+        
+        console.log('Creating reservation:', reservation);
+        const { data, error } = await supabaseClient
+          .from('reservation')
+          .insert(reservation);
+        
+        if (error) {
+          throw new Error(`Failed to create reservation: ${error.message}`);
+        }
+        
         if (result.success) {
-          // Clear order info from localStorage
+          // Clear stored data from localStorage
           localStorage.removeItem('orderInfo');
-          localStorage.removeItem('delivery_address');
-          localStorage.removeItem('delivery_instructions');
+          localStorage.removeItem('reservation_party_size');
+          localStorage.removeItem('reservation_table_no');
+          localStorage.removeItem('reservation_date_time');
+          localStorage.removeItem('reservation_special_requests');
           localStorage.removeItem('stripe_payment_intent_id');
           localStorage.removeItem('stripe_amount');
           
@@ -428,8 +521,10 @@ export default {
       isSubmitting,
       orderPlaced,
       paymentId,
-      deliveryAddress,
-      deliveryInstructions,
+      partySize,
+      preferredTable,
+      reservationDateTime,
+      specialRequests,
       calculateTax,
       calculateTotal,
       proceedToStripeCheckout,

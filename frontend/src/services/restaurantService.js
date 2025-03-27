@@ -55,11 +55,11 @@ export const getRestaurantById = async (id) => {
 // Create a reservation
 export const createReservation = async (reservationData) => {
   try {
-    const response = await fetch(`${RESTAURANT_API_URL}/reservations`, {
+    const headers = await getAuthHeaders();
+    
+    const response = await fetch(`${RESERVATION_API_URL}/reservations`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(reservationData),
     });
     
