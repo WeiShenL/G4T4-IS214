@@ -30,3 +30,4 @@ yarn-error.log*
 **/.DS_Store
 Thumbs.db
 frontend/.DS_Store
+backend/.DS_Store
