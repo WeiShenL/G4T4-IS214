@@ -41,6 +41,12 @@ const routes = [
     name: 'Restaurants',
     component: Restaurants,
     meta: { requiresAuth: true, userType: 'customer' } // Require customer auth
+  },
+  {
+    path: '/reservations',
+    name: 'CustomerReservations',
+    component: () => import('@/views/CustomerReservations.vue'),
+    meta: { requiresAuth: true, userType: 'customer' }
   }
 ];
 
