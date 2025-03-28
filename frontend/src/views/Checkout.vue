@@ -59,9 +59,9 @@
           <hr>
           <p class="mb-0">Payment ID: {{ paymentId }}</p>
           <div class="mt-3">
-            <router-link to="/reservations" class="btn btn-primary">
-              View My Reservations
-            </router-link>
+            <button @click="goToReservations" class="btn btn-primary">
+              <i class="fas fa-calendar-check me-2"></i> View My Reservations
+            </button>
           </div>
         </div>
         
@@ -214,6 +214,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { getCurrentUser, signOut, supabaseClient } from '@/services/supabase';
 import { createOrder } from '@/services/menuService';
 import { initStripe, createCheckoutSession, verifyPayment } from '@/services/stripeService';
+import { createReservation } from '@/services/restaurantService';
 
 export default {
   name: 'Checkout',
@@ -243,6 +244,10 @@ export default {
     const isReturnFromStripe = computed(() => {
       return route.query.success === 'true' && route.query.session_id;
     });
+
+    const goToReservations = () => {
+      router.push('/reservations');
+    };
     
     // Set default reservation time to 1 hour from now
     const setDefaultReservationTime = () => {
@@ -462,24 +467,21 @@ export default {
         console.log('Creating order with payment ID:', stripePaymentIntentId);
         const result = await createOrder(order);
         
-        // Create the reservation in the database
-        const reservation = {
+        // create reservation in reservation svc
+        console.log('Creating reservation via microservice');
+        const reservationResult = await createReservation({
           restaurant_id: orderInfo.value.restaurantId,
           user_id: user.value.id,
           table_no: storedTableNo || null,
           status: 'Booked',
           count: parseInt(storedPartySize),
           price: calculateTotal(),
-          time: new Date(storedDateTime).toISOString()
-        };
+          time: new Date(storedDateTime).toISOString(),
+          stripe_payment_id: stripePaymentIntentId
+        });
         
-        console.log('Creating reservation:', reservation);
-        const { data, error } = await supabaseClient
-          .from('reservation')
-          .insert(reservation);
-        
-        if (error) {
-          throw new Error(`Failed to create reservation: ${error.message}`);
+        if (!reservationResult.success) {
+          throw new Error(`Failed to create reservation: ${reservationResult.message}`);
         }
         
         if (result.success) {
@@ -497,11 +499,7 @@ export default {
           
           // Show success message
           orderPlaced.value = true;
-          
-          // Redirect to reservations page after a delay
-          setTimeout(() => {
-            router.push('/reservations');
-          }, 3000); // 3 seconds to see the success message
+                    
         }
       } catch (error) {
         console.error('Error handling Stripe return:', error);
@@ -541,6 +539,7 @@ export default {
       calculateTax,
       calculateTotal,
       proceedToStripeCheckout,
+      goToReservations,
       logout
     };
   }

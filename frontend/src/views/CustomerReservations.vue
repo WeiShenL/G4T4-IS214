@@ -296,7 +296,7 @@
       
       // Confirm cancellation
       const confirmCancellation = async () => {
-        alert('i love ESD a lot esp my ....!!!!');
+        alert('i love ESD a lot esp my !!!!');
         
         cancellationModal.value.hide();
       };

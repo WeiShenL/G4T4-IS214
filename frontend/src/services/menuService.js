@@ -34,7 +34,7 @@ export const getRestaurantMenu = async (restaurantId) => {
   }
 };
 
-// Get specific menu item by ID
+// Get specific menu item by ID, idt this is needed
 export const getMenuItemById = async (menuId) => {
   try {
     const response = await fetch(`${MENU_API_URL}/menu/item/${menuId}`);
@@ -79,7 +79,7 @@ export const createOrder = async (orderData) => {
   }
 };
 
-// get orders for a specific user (not needed yet)
+// get all orders for a specific user (not used for now) --> order history page? idk
 export const getUserOrders = async (userId) => {
   try {
     if (!userId) {

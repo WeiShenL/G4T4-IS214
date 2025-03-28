@@ -109,7 +109,7 @@ export const getUserReservations = async (userId) => {
   }
 };
 
-// Get restaurants by availability
+// this is for filtering (might not need though)
 export const getRestaurantsByAvailability = async (availability) => {
   try {
     const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/${availability}`);
@@ -127,6 +127,7 @@ export const getRestaurantsByAvailability = async (availability) => {
   }
 };
 
+// this is for filtering (might not need though)
 export const getRestaurantsByCuisine = async (cuisine) => {
   try {
     const response = await fetch(`${RESTAURANT_API_URL}/restaurants/cuisine/${cuisine}`);

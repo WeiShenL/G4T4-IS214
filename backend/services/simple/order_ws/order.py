@@ -69,7 +69,7 @@ def create_order():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# get all orders for a specific user (not used for now)
+# get all orders for a specific user (not used for now) --> order history page? idk
 @app.route("/api/orders/user/<string:user_id>", methods=['GET'])
 def get_user_orders(user_id):
     try:
@@ -191,55 +191,6 @@ def verify_payment(session_id):
     
     except Exception as e:
         print(f"Error verifying payment: {str(e)}")
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
-
-# STRIPE INTEGRATION - Webhook handler
-@app.route("/api/stripe/webhooks", methods=['POST'])
-def stripe_webhook():
-    try:
-        print("Received webhook request")
-        
-        payload = request.data
-        sig_header = request.headers.get('Stripe-Signature')
-        
-        if not webhook_secret:
-            print("Warning: Webhook secret not configured")
-            event = json.loads(payload)
-        else:
-            try:
-                event = stripe.Webhook.construct_event(
-                    payload, sig_header, webhook_secret
-                )
-            except ValueError as e:
-                # Invalid payload
-                print(f"Invalid payload: {str(e)}")
-                return jsonify({"error": "Invalid payload"}), 400
-            except stripe.error.SignatureVerificationError as e:
-                # Invalid signature
-                print(f"Invalid signature: {str(e)}")
-                return jsonify({"error": "Invalid signature"}), 400
-        
-        # Handle the event
-        event_type = event['type']
-        print(f"Received event: {event_type}")
-        
-        if event_type == 'checkout.session.completed':
-            session = event['data']['object']
-            print(f"Payment succeeded for session: {session.id}")
-            
-            # Here you would typically update your database or perform other actions
-            # This is especially useful for asynchronous payment methods
-            
-            # For example, you might want to verify the payment was successful
-            # and update the order status in your database
-            
-        return jsonify({"status": "success"}), 200
-    
-    except Exception as e:
-        print(f"Error processing webhook: {str(e)}")
         return jsonify({
             "code": 500,
             "message": f"An error occurred: {str(e)}"

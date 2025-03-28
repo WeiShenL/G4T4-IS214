@@ -228,7 +228,8 @@ CREATE TABLE public.reservation (
   price DECIMAL(10,2),
   time TIMESTAMP,
   stripe_payment_id VARCHAR(255),
-  FOREIGN KEY (restaurant_id) REFERENCES public.restaurant(restaurant_id)
+  FOREIGN KEY (restaurant_id) 
+  REFERENCES public.restaurant(restaurant_id)
 );
 
 -- -- Reset the sequence for reservation table
