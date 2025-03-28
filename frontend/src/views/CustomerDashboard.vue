@@ -120,28 +120,30 @@ export default {
     
     const quickActions = [
       {
+        icon: 'fas fa-calendar-check',
+        title: 'Book a Table',
+        link: '/restaurants',
+        linkText: 'Find Restaurants'
+      },
+      {
+        icon: 'fas fa-list-alt',
+        title: 'View My Table Reservations',
+        link: '/reservations',
+        linkText: 'See Table Bookings'
+      },
+      // yet to change link
+      {
         icon: 'fas fa-utensils',
-        title: 'Order Food',
+        title: 'Order Food for Delivery',
         link: '/restaurants',
         linkText: 'Browse Restaurants'
       },
+      // yet to change link
       {
-        icon: 'fas fa-calendar-check',
-        title: 'Reservations',
+        icon: 'fas fa-list-alt',
+        title: 'View My Takeaway Orders',
         link: '/reservations',
-        linkText: 'Book a Table'
-      },
-      {
-        icon: 'fas fa-history',
-        title: 'Order History',
-        link: '/customer-orders',
-        linkText: 'View Past Orders'
-      },
-      {
-        icon: 'fas fa-star',
-        title: 'Favorites',
-        link: '/favorites',
-        linkText: 'Your Favorite Places'
+        linkText: 'See Orders'
       }
     ];
     

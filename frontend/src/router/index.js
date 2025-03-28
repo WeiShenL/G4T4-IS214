@@ -6,9 +6,10 @@ import Login from '@/views/Login.vue';
 import Signup from '@/views/Signup.vue';
 import CustomerDashboard from '@/views/CustomerDashboard.vue';
 import DriverDashboard from '@/views/DriverDashboard.vue';
+import Restaurants from '@/views/Restaurants.vue'; 
 
-//driver
-import DriverView from '../views/DriverView.vue';
+import RestaurantMenu from '@/views/RestaurantMenu.vue';
+import Checkout from '@/views/Checkout.vue';
 
 const routes = [
   {
@@ -38,13 +39,30 @@ const routes = [
     component: DriverDashboard,
     meta: { requiresAuth: true, userType: 'driver' }
   },
-  
   {
-    path: '/driver', // Route for the driver's dashboard
-    name: 'DriverDashboard',
-    component: DriverView,
+    path: '/restaurants',
+    name: 'Restaurants',
+    component: Restaurants,
+    meta: { requiresAuth: true, userType: 'customer' } // Require customer auth
   },
-  
+  {
+    path: '/reservations',
+    name: 'CustomerReservations',
+    component: () => import('@/views/CustomerReservations.vue'),
+    meta: { requiresAuth: true, userType: 'customer' }
+  },
+  {
+    path: '/restaurant/:id/menu',
+    name: 'RestaurantMenu',
+    component: RestaurantMenu,
+    meta: { requiresAuth: true, userType: 'customer' }
+  },
+  {
+    path: '/checkout/:id',
+    name: 'Checkout',
+    component: Checkout,
+    meta: { requiresAuth: true, userType: 'customer' }
+  }
 ];
 
 const router = createRouter({
