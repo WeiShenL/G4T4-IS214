@@ -455,7 +455,8 @@ export default {
         const storedPartySize = localStorage.getItem('reservation_party_size');
         const storedTableNo = localStorage.getItem('reservation_table_no');
         const storedDateTime = localStorage.getItem('reservation_date_time');
-        
+        const storedOrderType = localStorage.getItem('orderType');
+
         if (!storedPartySize || !storedDateTime) {
           throw new Error('Reservation information not found');
         }
@@ -468,7 +469,7 @@ export default {
           quantity: orderInfo.value.item.quantity,
           order_price: calculateTotal(),
           payment_id: stripePaymentIntentId,
-          order_type: localStorage.getItem('orderType')
+          order_type: storedOrderType
         };
         
         console.log('Creating order with payment ID:', stripePaymentIntentId);

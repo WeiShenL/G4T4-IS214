@@ -29,7 +29,7 @@ print(f"Webhook secret configured: {webhook_secret[:5]}...")
 def create_order():
     try:
         data = request.json
-        required_fields = ['user_id', 'restaurant_id', 'item_name', 'quantity', 'order_price', 'payment_id']
+        required_fields = ['user_id', 'restaurant_id', 'item_name', 'quantity', 'order_price', 'payment_id','order_type']
         
         for field in required_fields:
             if field not in data:
@@ -46,7 +46,8 @@ def create_order():
             "quantity": data['quantity'],
             "order_price": data['order_price'],
             "payment_id": data['payment_id'],
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "order_type": data['order_type']
         }
         
         response = supabase.table('orders').insert(new_order).execute()
