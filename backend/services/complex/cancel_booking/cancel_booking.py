@@ -1,6 +1,23 @@
+import sys
+import os
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+sys.path.insert(0, project_root)
+
+import json
+import time
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import json, time, requests, rabbitmq.amqp_lib, rabbitmq.amqp_setup
+import pika
+
+from backend.rabbitmq.amqp_lib import connect, is_connection_open
+from backend.rabbitmq.amqp_setup import (
+    amqp_host, 
+    amqp_port, 
+    exchange_name, 
+    exchange_type
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -14,13 +31,13 @@ def connectAMQP():
     max_retries = 5
     for attempt in range(max_retries):
         try:
-            if connection is None or not rabbitmq.amqp_lib.is_connection_open(connection):
+            if connection is None or not is_connection_open(connection):
                 print("  Connecting to AMQP broker...")
-                connection, channel = rabbitmq.amqp_lib.connect(
-                    hostname=rabbitmq.amqp_setup.amqp_host,
-                    port=rabbitmq.amqp_setup.amqp_port,
-                    exchange_name=rabbitmq.amqp_setup.exchange_name,
-                    exchange_type=rabbitmq.amqp_setup.exchange_type,
+                connection, channel = connect(
+                    hostname=amqp_host,
+                    port=amqp_port,
+                    exchange_name=exchange_name,
+                    exchange_type=exchange_type,
                 )
             return
         except Exception as e:
@@ -33,12 +50,13 @@ def connectAMQP():
 
 # Publish message to RabbitMQ
 def publish_message(routing_key, message):
-    if connection is None or not rabbitmq.amqp_lib.is_connection_open(connection):
+    global connection, channel
+    if connection is None or not is_connection_open(connection):
         connectAMQP()
     
     message_json = json.dumps(message)
-    rabbitmq.amqp_setup.channel.basic_publish(
-        exchange=rabbitmq.amqp_setup.exchange_name,
+    channel.basic_publish(
+        exchange=exchange_name,
         routing_key=routing_key,
         body=message_json
     )
@@ -100,4 +118,4 @@ def process_cancellation(reservation_id):
 if __name__ == '__main__':
     print("Starting cancel_booking service...")
     connectAMQP()
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    app.run(host='0.0.0.0', port=5005, debug=True)

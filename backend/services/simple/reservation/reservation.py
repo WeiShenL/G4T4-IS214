@@ -141,6 +141,96 @@ def get_user_reservations(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
+# ks code
+@app.route('/reservation/cancel/<int:reservation_id>', methods=['PATCH'])
+def cancel_reservation(reservation_id):
+    try:
+        # Fetch the existing reservation
+        response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
+        
+        if not response.data:
+            return jsonify({"error": "Reservation not found"}), 404
+        
+        reservation = response.data[0]
+        
+        # Prepare update data
+        update_data = {
+            "user_id": None,
+            "status": "empty",
+            "count": None,
+            "price": None,
+            "time": None
+        }
+        
+        # Calculate refund amount
+        refund_amount = reservation.get('price', 0)
+        table_no = reservation.get('table_no')
+        user_id = reservation.get('user_id')
+        
+        # Update the reservation
+        update_response = supabase.table('reservation').update(update_data).eq('reservation_id', reservation_id).execute()
+        
+        if not update_response.data:
+            return jsonify({"error": "Failed to update reservation"}), 500
+        
+        return jsonify({
+            "reservation_id": reservation_id,
+            "user_id": user_id,
+            "table_no": table_no,
+            "refund_amount": refund_amount
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
+# ks code
+@app.route('/reservation/reallocate/<int:reservation_id>', methods=['PATCH'])
+def update_reservation(reservation_id):
+    try:
+        # Get the request data
+        data = request.get_json()
+        
+        # Validate input
+        update_data = {}
+        if "user_id" in data:
+            update_data["user_id"] = data["user_id"]
+        if "status" in data:
+            update_data["status"] = data["status"]
+        
+        # If no update data, return error
+        if not update_data:
+            return jsonify({"error": "No update data provided"}), 400
+        
+        # Fetch the existing reservation to ensure it exists
+        existing_response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
+        
+        if not existing_response.data:
+            return jsonify({"error": "Reservation not found"}), 404
+        
+        # Perform the update
+        update_response = supabase.table('reservation').update(update_data).eq('reservation_id', reservation_id).execute()
+        
+        if not update_response.data:
+            return jsonify({"error": "Failed to update reservation"}), 500
+        
+        # Fetch the updated reservation to return
+        updated_response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
+        
+        return jsonify({
+            "reservation_id": reservation_id,
+            "user_id": updated_response.data[0].get('user_id'),
+            "table_no": updated_response.data[0].get('table_no'),
+            "status": updated_response.data[0].get('status')
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
         
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)
