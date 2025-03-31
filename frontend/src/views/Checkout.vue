@@ -153,7 +153,7 @@
                 </div>
                 
                 <div class="mb-3">
-                  <label for="preferredTable" class="form-label">Preferred Table Number</label>
+                  <label for="preferredTable" class="form-label">Preferred Table Number (Optional)</label>
                   <input 
                     type="number" 
                     class="form-control" 
@@ -162,7 +162,7 @@
                     min="1"
                     required
                   >
-                  <small class="text-muted">Please fill in</small>
+                  <small class="text-muted">Leave empty for automatic assignmen</small>
                 </div>
                 
                 <div class="mb-3">
@@ -480,12 +480,12 @@ export default {
         const reservationResult = await createReservation({
           restaurant_id: orderInfo.value.restaurantId,
           user_id: user.value.id,
-          table_no: storedTableNo || null,
+          table_no: storedTableNo || null, 
           status: 'Booked',
           count: parseInt(storedPartySize),
           price: calculateTotal(),
           time: new Date(storedDateTime).toISOString(),
-          order_id: result.data.id
+          order_id: result.data.order_id
           // stripe_payment_id: stripePaymentIntentId
         });
         

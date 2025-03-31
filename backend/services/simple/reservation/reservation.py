@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import random
 
 load_dotenv()
 
@@ -66,7 +67,7 @@ def get_reservation(reservation_id):
 def create_reservation():
     try:
         data = request.json
-        required_fields = ['restaurant_id', 'user_id', 'table_no', 'count', 'status', 'time']
+        required_fields = ['restaurant_id', 'user_id', 'count', 'status', 'time']
         
         for field in required_fields:
             if field not in data:
@@ -74,18 +75,24 @@ def create_reservation():
                     "code": 400,
                     "message": f"Missing required field: {field}"
                 }), 400
+                
+        # Auto-assign table number if not provided
+        table_no = data.get('table_no')
+        if table_no is None:
+            # assign a random table between 1-50
+            table_no = random.randint(1, 50)
         
         # create a new reservation with stripe_payment_id 
         # if time not specified, use timenow (but shldnt happen)
         new_reservation = {
             "restaurant_id": data['restaurant_id'],
             "user_id": data['user_id'],
-            "table_no": data.get('table_no'),  
+            "table_no": table_no,  
             "status": data['status'],
             "count": data['count'],
             "price": data.get('price', 0),
             "time": data.get('time', datetime.now().isoformat()),
-            # "stripe_payment_id": data.get('stripe_payment_id')
+            "order_id": data.get('order_id')
         }
         
         response = supabase.table('reservation').insert(new_reservation).execute()
