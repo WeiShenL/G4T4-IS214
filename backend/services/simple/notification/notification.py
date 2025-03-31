@@ -62,23 +62,33 @@ MESSAGE_TEMPLATES = {
 # Sends an SMS via Twilio
 def send_sms(phone, message):
     try:
-        # Format phone number if needed
-        # If phone is just digits without +, assume it's a US number
-        if phone and phone.isdigit():
-            phone = f"+{phone}"
+        # change to string
+        phone_str = str(phone)
+        
+        # remove any funny characters
+        digits_only = ''.join(char for char in phone_str if char.isdigit())
+        
+        # only digits
+        if not digits_only:
+            raise ValueError(f"Invalid phone number: {phone_str} contains no digits")
             
+        # add back +
+        formatted_phone = f"+{digits_only}"
+            
+        # send via Twilio
         sms = client.messages.create(
             body=message,
             from_=TWILIO_PHONE_NUMBER,
-            to=phone
+            to=formatted_phone
         )
+        
         logging.info(f"SMS sent successfully to {phone} (SID: {sms.sid})")
         return {"status": "success", "twilio_sid": sms.sid}
     except Exception as e:
         logging.error(f"Failed to send SMS to {phone}: {e}")
         return {"status": "failed", "error": str(e)}
 
-# Save the notification to Supabase
+# Save the notification to SupabaseZ
 def save_notification_to_db(message, msg_type, status):
     try:
         # Insert notification into Supabase
@@ -86,7 +96,6 @@ def save_notification_to_db(message, msg_type, status):
             "message": message,
             "status": status,
             "type": msg_type,
-            "time": datetime.now().isoformat()
         }
         
         response = supabase.table('notification').insert(notification_data).execute()
