@@ -99,12 +99,40 @@
                   <h5>Total</h5>
                   <h5>${{ calculateTotal().toFixed(2) }}</h5>
                 </div>
+                <div v-if="paymentError" class="alert alert-danger mb-3">
+                  {{ paymentError }}
+                </div>
+                
+                <div class="stripe-info alert alert-info mb-3">
+                  <i class="fas fa-info-circle me-2"></i>
+                  When you click "Proceed to Payment", you'll be redirected to Stripe's secure checkout page to complete your payment and confirm your reservation.
+                </div>
+                
+                <button 
+                  type="button" 
+                  class="btn btn-primary w-100" 
+                  @click="proceedToStripeCheckout" 
+                  :disabled="isSubmitting || !partySize || !reservationDateTime"
+                >
+                  <span v-if="isSubmitting">
+                    <i class="fas fa-spinner fa-spin"></i> Processing...
+                  </span>
+                  <span v-else>
+                    <i class="fas fa-credit-card me-2"></i> Proceed to Payment - ${{ calculateTotal().toFixed(2) }}
+                  </span>
+                </button>
+                
+                <div class="mt-3 text-center">
+                  <small class="text-muted">
+                    <i class="fas fa-lock me-1"></i> Secure payment powered by Stripe
+                  </small>
+                </div>
               </div>
             </div>
           </div>
           
           <!-- Reservation Info and Checkout Button -->
-          <div class="col-md-7">
+          <div class="col-md-7" v-if="orderType === 'dine_in'">
             <div class="card">
               <div class="card-header">
                 <h3 class="mb-0">Reservation Information</h3>
@@ -159,34 +187,7 @@
                   ></textarea>
                 </div>
                 
-                <div v-if="paymentError" class="alert alert-danger mb-3">
-                  {{ paymentError }}
-                </div>
-                
-                <div class="stripe-info alert alert-info mb-3">
-                  <i class="fas fa-info-circle me-2"></i>
-                  When you click "Proceed to Payment", you'll be redirected to Stripe's secure checkout page to complete your payment and confirm your reservation.
-                </div>
-                
-                <button 
-                  type="button" 
-                  class="btn btn-primary w-100" 
-                  @click="proceedToStripeCheckout" 
-                  :disabled="isSubmitting || !partySize || !reservationDateTime"
-                >
-                  <span v-if="isSubmitting">
-                    <i class="fas fa-spinner fa-spin"></i> Processing...
-                  </span>
-                  <span v-else>
-                    <i class="fas fa-credit-card me-2"></i> Proceed to Payment - ${{ calculateTotal().toFixed(2) }}
-                  </span>
-                </button>
-                
-                <div class="mt-3 text-center">
-                  <small class="text-muted">
-                    <i class="fas fa-lock me-1"></i> Secure payment powered by Stripe
-                  </small>
-                </div>
+
               </div>
             </div>
           </div>
@@ -217,6 +218,10 @@ import { initStripe, createCheckoutSession, verifyPayment } from '@/services/str
 import { createReservation } from '@/services/restaurantService';
 
 export default {
+  data() {
+    return {
+      orderType: localStorage.getItem('orderType') };
+    },
   name: 'Checkout',
   setup() {
     const router = useRouter();
@@ -376,7 +381,8 @@ export default {
           itemName: orderInfo.value.item.name,
           quantity: orderInfo.value.item.quantity,
           amount: calculateTotal() * 100, // Stripe uses cents
-          currency: 'usd'
+          currency: 'usd',
+          order_type: localStorage.getItem('orderType')
         };
         
         // Set up success and cancel URLs
@@ -461,12 +467,13 @@ export default {
           item_name: orderInfo.value.item.name,
           quantity: orderInfo.value.item.quantity,
           order_price: calculateTotal(),
-          payment_id: stripePaymentIntentId
+          payment_id: stripePaymentIntentId,
+          order_type: localStorage.getItem('orderType')
         };
         
         console.log('Creating order with payment ID:', stripePaymentIntentId);
         const result = await createOrder(order);
-        
+
         // create reservation in reservation svc
         console.log('Creating reservation via microservice');
         const reservationResult = await createReservation({
@@ -477,7 +484,8 @@ export default {
           count: parseInt(storedPartySize),
           price: calculateTotal(),
           time: new Date(storedDateTime).toISOString(),
-          stripe_payment_id: stripePaymentIntentId
+          order_id: result.data.id
+          // stripe_payment_id: stripePaymentIntentId
         });
         
         if (!reservationResult.success) {
@@ -493,7 +501,8 @@ export default {
           localStorage.removeItem('reservation_special_requests');
           localStorage.removeItem('stripe_payment_intent_id');
           localStorage.removeItem('stripe_amount');
-          
+          localStorage.removeItem('orderType');
+
           // Set payment ID for display
           paymentId.value = stripePaymentIntentId;
           

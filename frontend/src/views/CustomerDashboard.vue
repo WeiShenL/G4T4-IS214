@@ -67,7 +67,7 @@
                 <i :class="action.icon"></i>
               </div>
               <h4>{{ action.title }}</h4>
-              <router-link :to="action.link" class="action-link">{{ action.linkText }}</router-link>
+              <router-link :to="action.link" class="action-link" @click="action.orderType">{{ action.linkText }}</router-link>
             </div>
           </div>
         </div>
@@ -109,6 +109,11 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut } from '@/services/supabase';
 
+const setOrderType = async (type) => {
+  // Store order_type in localStorage for temporary use
+  localStorage.setItem('orderType', type);
+}
+
 export default {
   name: 'CustomerDashboard',
   setup() {
@@ -123,7 +128,9 @@ export default {
         icon: 'fas fa-calendar-check',
         title: 'Book a Table',
         link: '/restaurants',
-        linkText: 'Find Restaurants'
+        linkText: 'Find Restaurants',
+        orderType: () => setOrderType('dine_in')
+
       },
       {
         icon: 'fas fa-list-alt',
@@ -136,7 +143,8 @@ export default {
         icon: 'fas fa-utensils',
         title: 'Order Food for Delivery',
         link: '/restaurants',
-        linkText: 'Browse Restaurants'
+        linkText: 'Browse Restaurants',
+        orderType: () => setOrderType('delivery')
       },
       // yet to change link
       {
