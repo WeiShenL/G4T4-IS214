@@ -71,3 +71,36 @@ export const verifyPayment = async (sessionId) => {
     throw new Error('Payment verification failed');
   }
 };
+
+/**
+ * Process a refund through Stripe
+ * @param {string} paymentId - The original payment intent ID
+ * @param {number} amount - Amount to refund (in cents)
+ */
+export const processRefund = async (paymentId, amount) => {
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/stripe/refund`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        payment_id: paymentId, 
+        amount: amount 
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.code !== 200) {
+      throw new Error(data.message || 'Refund processing failed');
+    }
+    
+    return {
+      refundId: data.refund.id,
+      amount: data.refund.amount,
+      status: data.refund.status
+    };
+  } catch (error) {
+    console.error('Error processing refund:', error);
+    throw new Error('Failed to process refund: ' + error.message);
+  }
+};

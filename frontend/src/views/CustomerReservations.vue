@@ -89,6 +89,7 @@
                         <button 
                           class="btn btn-sm btn-outline-danger"
                           @click="cancelReservation(reservation)"
+                          :disabled="reservation.status === 'Cancelled' || reservation.status === 'Completed'"
                         >
                           Cancel Reservation
                         </button>
@@ -120,13 +121,44 @@
           <div class="modal-content" v-if="selectedReservation">
             <div class="modal-header">
               <h5 class="modal-title" id="cancellationModalLabel">Confirm Cancellation</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="isProcessingCancellation"></button>
             </div>
-            <div class="modal-body">
+            
+            <!-- Loading State -->
+            <div v-if="isProcessingCancellation" class="modal-body text-center p-4">
+              <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Processing cancellation...</span>
+              </div>
+              <p>Processing your cancellation...</p>
+              <small class="text-muted">This may take a moment to complete</small>
+            </div>
+            
+            <!-- Success State -->
+            <div v-else-if="cancellationSuccess" class="modal-body text-center p-4">
+              <div class="mb-3 text-success">
+                <i class="fas fa-check-circle fa-3x"></i>
+              </div>
+              <h4 class="text-success">Cancellation Successful!</h4>
+              <p>Your reservation has been cancelled and your refund is being processed.</p>
+            </div>
+            
+            <!-- Error State -->
+            <div v-else-if="cancellationError" class="modal-body">
+              <div class="alert alert-danger mb-3">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                {{ cancellationError }}
+              </div>
               <p>Are you sure you want to cancel your reservation at <strong>{{ getRestaurantName(selectedReservation.restaurant_id) }}</strong> on {{ formatDate(selectedReservation.time) }} at {{ formatTime(selectedReservation.time) }}?</p>
               <p class="text-danger">This action cannot be undone.</p>
             </div>
-            <div class="modal-footer">
+            
+            <!-- Confirmation State (Default) -->
+            <div v-else class="modal-body">
+              <p>Are you sure you want to cancel your reservation at <strong>{{ getRestaurantName(selectedReservation.restaurant_id) }}</strong> on {{ formatDate(selectedReservation.time) }} at {{ formatTime(selectedReservation.time) }}?</p>
+              <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            
+            <div class="modal-footer" v-if="!isProcessingCancellation && !cancellationSuccess">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Reservation</button>
               <button type="button" class="btn btn-danger" @click="confirmCancellation">Confirm Cancellation</button>
             </div>
@@ -136,202 +168,295 @@
     </div>
 </template>
   
-  <script>
-  import { ref, onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { supabaseClient, signOut, getCurrentUser } from '@/services/supabase';
-  import { getUserReservations, getAllRestaurants } from '@/services/restaurantService';
-  
-  export default {
-    name: 'CustomerReservations',
-    setup() {
-      const router = useRouter();
-      const user = ref(null);
-      const reservations = ref([]);
-      const restaurants = ref([]);
-      const isLoading = ref(true);
-      const errorMessage = ref('');
-      const selectedReservation = ref(null);
-      const cancellationModal = ref(null);
-      
-      // data load when component mount
-      onMounted(async () => {
-        try {
-          // bootstrap modal
-          if (typeof bootstrap !== 'undefined') {
-            cancellationModal.value = new bootstrap.Modal(document.getElementById('cancellationModal'));
-          }
-          
-          // load user data first
-          await loadUserData();
-          
-          // proceed with loading other data once user data was loaded successfully
-          if (user.value) {
-            await Promise.all([
-              loadRestaurants(),
-              loadReservations()
-            ]);
-          }
-        } catch (error) {
-          console.error('Error during initialization:', error);
-          errorMessage.value = 'An error occurred while loading the page. Please try again.';
-          
-        } finally {
-          isLoading.value = false;
-        }
-      });
-      
-      // load user data
-      const loadUserData = async () => {
-        try {
-          // logged in>?
-          const currentUser = await getCurrentUser();
-          
-          if (!currentUser) {
-            // Not logged in, redirect to login
-            router.push('/login');
-            return;
-          }
-          
-          // Get customer profile data
-          const { data: profileData, error: profileError } = await supabaseClient
-            .from('customer_profiles')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
-          
-          if (profileError) {
-            console.error('Error fetching profile data:', profileError);
-            throw profileError;
-          }
-          
-          // Update user ref with profile data
-          user.value = {
-            customerName: profileData.customer_name,
-            phoneNumber: profileData.phone_number,
-            streetAddress: profileData.street_address,
-            postalCode: profileData.postal_code,
-            id: currentUser.id
-          };
-        } catch (error) {
-          console.error('Error loading user data:', error);
-          throw error;
-        }
-      };
-      
-      // Load restaurants data for names
-      const loadRestaurants = async () => {
-        try {
-          const restaurantsData = await getAllRestaurants();
-          restaurants.value = restaurantsData;
-        } catch (error) {
-          console.error('Error loading restaurants:', error);
-          // Not fatal, so just log the error
-        }
-      };
-      
-      // Load user's reservations
-      const loadReservations = async () => {
-        try {
-          if (!user.value || !user.value.id) {
-            console.warn('User ID not available yet, skipping reservation loading');
-            return; // Skip loading if user ID is not available yet
-          }
-          
-          console.log('Loading reservations for user ID:', user.value.id);
-          
-          const userReservations = await getUserReservations(user.value.id.toString());
-          reservations.value = userReservations;
-          
-          console.log('Loaded reservations:', reservations.value);
-        } catch (error) {
-          console.error('Error loading reservations:', error);
-          errorMessage.value = 'Failed to load your reservations. Please try again later.';
-          // Don't throw the error, just handle it here
-        }
-      };
+<script>
+import { ref, onMounted, onUnmounted } from 'vue'; 
+import { useRouter } from 'vue-router';
+import { supabaseClient, signOut, getCurrentUser } from '@/services/supabase';
+import { getUserReservations, getAllRestaurants } from '@/services/restaurantService';
+import { initStripe, processRefund } from '@/services/stripeService';
+import { Modal } from 'bootstrap'; 
 
-      
-      // Format date from ISO string
-      const formatDate = (isoString) => {
-        if (!isoString) return 'N/A';
-        const date = new Date(isoString);
-        return date.toLocaleDateString();
-      };
-      
-      // Format time from ISO string
-      const formatTime = (isoString) => {
-        if (!isoString) return 'N/A';
-        const date = new Date(isoString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      };
-      
-      // Get restaurant name from ID
-      const getRestaurantName = (restaurantId) => {
-        const restaurant = restaurants.value.find(r => r.restaurant_id === restaurantId);
-        return restaurant ? restaurant.name : `Restaurant #${restaurantId}`;
-      };
-      
-      // Get CSS class for status badge
-      const getStatusClass = (status) => {
-        switch (status) {
-          case 'Booked':
-            return 'bg-primary';
-          case 'Confirmed':
-            return 'bg-success';
-          case 'Cancelled':
-            return 'bg-danger';
-          case 'Completed':
-            return 'bg-info';
-          default:
-            return 'bg-secondary';
+export default {
+  name: 'CustomerReservations',
+  setup() {
+    const router = useRouter();
+    const user = ref(null);
+    const reservations = ref([]);
+    const restaurants = ref([]);
+    const isLoading = ref(true);
+    const errorMessage = ref('');
+    const selectedReservation = ref(null);
+    const cancellationModalInstance = ref(null); 
+    const isProcessingCancellation = ref(false);
+    const cancellationSuccess = ref(false);
+    const cancellationError = ref('');
+
+    // bootstrap modal instance, modal class
+    const initModal = () => {
+      try {
+        const modalElement = document.getElementById('cancellationModal');
+        if (modalElement) {
+          cancellationModalInstance.value = new Modal(modalElement); 
+        } else {
+          console.warn('Modal element (#cancellationModal) not found during initial mount.');
         }
-      };
-      
-      // Handle reservation cancellation
-      const cancelReservation = (reservation) => {
-        selectedReservation.value = reservation;
-        cancellationModal.value.show();
-      };
-      
-      // Confirm cancellation
-      const confirmCancellation = async () => {
-        alert('i love ESD a lot esp my !!!!');
+      } catch (error) {
+        console.error('Error initializing Bootstrap modal:', error);
+        errorMessage.value = 'Could not initialize the cancellation dialog.';
+      }
+    };
+
+    // load data when the component mounts, initialise modal
+    onMounted(async () => {
+      initModal(); 
+      try {
+        await loadUserData(); 
+        if (user.value) {
+          await Promise.all([loadRestaurants(), loadReservations()]);
+        }
+      } catch (error) {
+        console.error('Error during initialization:', error);
+        errorMessage.value = 'An error occurred while loading the page. Please try again.';
+      } finally {
+        isLoading.value = false;
+      }
+    });
+
+    // remove modal
+    onUnmounted(() => {
+      cancellationModalInstance.value?.dispose(); 
+    });
+    
+    // load user data
+    const loadUserData = async () => {
+      try {
+        // logged in>?
+        const currentUser = await getCurrentUser();
         
-        cancellationModal.value.hide();
-      };
-      
-      // Logout function
-      const logout = async () => {
-        try {
-          isLoading.value = true;
-          const { error } = await signOut();
-          if (error) throw error;
-          router.push('/');
-        } catch (error) {
-          console.error('Logout error:', error);
-          errorMessage.value = 'Failed to log out. Please try again.';
-        } finally {
-          isLoading.value = false;
+        if (!currentUser) {
+          // Not logged in, redirect to login
+          router.push('/login');
+          return;
         }
-      };
+        
+        // Get customer profile data
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('customer_profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (profileError) {
+          console.error('Error fetching profile data:', profileError);
+          throw profileError;
+        }
+        
+        // Update user ref with profile data
+        user.value = {
+          customerName: profileData.customer_name,
+          phoneNumber: profileData.phone_number,
+          streetAddress: profileData.street_address,
+          postalCode: profileData.postal_code,
+          id: currentUser.id
+        };
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        throw error;
+      }
+    };
+    
+    // Load restaurants data for names
+    const loadRestaurants = async () => {
+      try {
+        const restaurantsData = await getAllRestaurants();
+        restaurants.value = restaurantsData;
+      } catch (error) {
+        console.error('Error loading restaurants:', error);
+        // Not fatal, so just log the error
+      }
+    };
+    
+    // Load user's reservations
+    const loadReservations = async () => {
+      try {
+        if (!user.value || !user.value.id) {
+          console.warn('User ID not available yet, skipping reservation loading');
+          return; // Skip loading if user ID is not available yet
+        }
+        
+        console.log('Loading reservations for user ID:', user.value.id);
+        
+        const userReservations = await getUserReservations(user.value.id.toString());
+        reservations.value = userReservations;
+        
+        console.log('Loaded reservations:', reservations.value);
+      } catch (error) {
+        console.error('Error loading reservations:', error);
+        errorMessage.value = 'Failed to load your reservations. Please try again later.';
+        // Don't throw the error, just handle it here
+      }
+    };
+
+    
+    // Format date from ISO string
+    const formatDate = (isoString) => {
+      if (!isoString) return 'N/A';
+      const date = new Date(isoString);
+      return date.toLocaleDateString();
+    };
+    
+    // Format time from ISO string
+    const formatTime = (isoString) => {
+      if (!isoString) return 'N/A';
+      const date = new Date(isoString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    
+    // Get restaurant name from ID
+    const getRestaurantName = (restaurantId) => {
+      const restaurant = restaurants.value.find(r => r.restaurant_id === restaurantId);
+      return restaurant ? restaurant.name : `Restaurant #${restaurantId}`;
+    };
+    
+    // Get CSS class for status badge --> maybe dunnit so many
+    const getStatusClass = (status) => {
+      switch (status) {
+        case 'Booked':
+          return 'bg-primary';
+        case 'Confirmed':
+          return 'bg-success';
+        case 'Cancelled':
+          return 'bg-danger';
+        case 'Completed':
+          return 'bg-info';
+        default:
+          return 'bg-secondary';
+      }
+    };
+    
+    // Handle reservation cancellation
+    const cancelReservation = (reservation) => {
+      selectedReservation.value = reservation;
+      cancellationError.value = '';
+      cancellationSuccess.value = false;
+      isProcessingCancellation.value = false;
+
+      if (cancellationModalInstance.value) {
+        cancellationModalInstance.value.show();
+      } else {
+        console.warn("Modal instance not found. Attempting re-initialization.");
+        initModal();
+        if (cancellationModalInstance.value) {
+          cancellationModalInstance.value.show();
+        } else {
+          errorMessage.value = 'Cancellation dialog failed to open. Please refresh.';
+          console.error("Modal instance could not be created or found.");
+        }
+      }
+    };
+    
+    // Confirm cancellation
+    const confirmCancellation = async () => {
+      if (!selectedReservation.value) {
+        return;
+      }
       
-      return {
-        user,
-        reservations,
-        isLoading,
-        errorMessage,
-        selectedReservation,
-        formatDate,
-        formatTime,
-        getRestaurantName,
-        getStatusClass,
-        cancelReservation,
-        confirmCancellation,
-        logout
-      };
-    }
-  };
+      try {
+        // Set loading state
+        isProcessingCancellation.value = true;
+        cancellationError.value = '';
+        
+        // Initialize Stripe
+        await initStripe();
+        
+        // Get payment ID and amount from the reservation
+        const paymentId = selectedReservation.value.payment_id;
+        const refundAmount = selectedReservation.value.price * 100; // Convert to cents for Stripe
+        
+        if (!paymentId) {
+          throw new Error('No payment information found for this reservation');
+        }
+        
+        // Process refund through Stripe
+        const refundResult = await processRefund(paymentId, refundAmount);
+        
+        if (refundResult.status !== 'succeeded') {
+          throw new Error('Refund was not successful');
+        }
+        
+        // Call the cancel_booking service to complete the cancellation process
+        const response = await fetch(`http://localhost:5002/cancel/${selectedReservation.value.reservation_id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to cancel reservation');
+        }
+        
+        // Update UI to show success
+        cancellationSuccess.value = true;
+        
+        // Hide modal after a short delay
+        setTimeout(() => {
+          cancellationModal.value.hide();
+          
+          // Reload reservations
+          loadReservations();
+          
+          // Reset cancellation state after modal is hidden
+          setTimeout(() => {
+            cancellationSuccess.value = false;
+            isProcessingCancellation.value = false;
+            selectedReservation.value = null;
+          }, 500);
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Error during cancellation:', error);
+        cancellationError.value = error.message || 'An error occurred during cancellation';
+        isProcessingCancellation.value = false;
+      }
+    };
+    
+    // Logout function
+    const logout = async () => {
+      try {
+        isLoading.value = true;
+        const { error } = await signOut();
+        if (error) throw error;
+        router.push('/');
+      } catch (error) {
+        console.error('Logout error:', error);
+        errorMessage.value = 'Failed to log out. Please try again.';
+      } finally {
+        isLoading.value = false;
+      }
+    };
+    
+    return {
+      user,
+      reservations,
+      isLoading,
+      errorMessage,
+      selectedReservation,
+      isProcessingCancellation,
+      cancellationSuccess,
+      cancellationError,
+      formatDate,
+      formatTime,
+      getRestaurantName,
+      getStatusClass,
+      cancelReservation,
+      confirmCancellation,
+      logout
+    };
+  }
+};
 </script>
 
 <style scoped>

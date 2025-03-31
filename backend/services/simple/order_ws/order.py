@@ -94,6 +94,51 @@ def get_user_orders(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
+# STRIPE INTEGRATION - Process a refund
+@app.route("/api/stripe/refund", methods=['POST'])
+def process_refund():
+    try:
+        data = request.json
+        payment_id = data.get('payment_id')
+        amount = data.get('amount')  # Optional, if not provided will refund full amount
+        
+        if not payment_id:
+            return jsonify({
+                "code": 400,
+                "message": "Payment ID is required"
+            }), 400
+        
+        # Process the refund through Stripe
+        refund_params = {
+            "payment_intent": payment_id,
+        }
+        
+        # Add amount if provided
+        if amount:
+            refund_params["amount"] = int(amount)
+        
+        print(f"Processing refund for payment intent: {payment_id}")
+        
+        refund = stripe.Refund.create(**refund_params)
+        
+        print(f"Refund processed: {refund.id}")
+        
+        return jsonify({
+            "code": 200,
+            "refund": {
+                "id": refund.id,
+                "amount": refund.amount,
+                "status": refund.status
+            }
+        })
+    
+    except Exception as e:
+        print(f"Error processing refund: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
 # STRIPE INTEGRATION - Create a checkout session
 @app.route("/api/stripe/create-checkout-session", methods=['POST'])
 def create_checkout_session():
