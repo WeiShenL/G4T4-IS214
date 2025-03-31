@@ -356,7 +356,6 @@ export default {
     };
     
     // Confirm cancellation
-    // In the confirmCancellation method
     const confirmCancellation = async () => {
       if (!selectedReservation.value) {
         return;
@@ -369,7 +368,7 @@ export default {
         
         console.log('Starting cancellation process for reservation:', selectedReservation.value.reservation_id);
         
-        // Direct call to the cancel_booking microservice
+        // Call the cancel_booking microservice
         const response = await fetch(`http://localhost:5005/cancel/${selectedReservation.value.reservation_id}`, {
           method: 'POST',
           headers: {
@@ -377,15 +376,25 @@ export default {
           }
         });
         
-        console.log('Received response from cancellation service');
-        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `Failed to cancel reservation: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log('Cancellation successful:', data);
+        console.log('Cancellation response:', data);
+        
+        // If there's a payment_id, process the refund through Stripe
+        if (data.payment_id) {
+          try {
+            console.log('Processing refund for payment:', data.payment_id);
+            const refundResponse = await processRefund(data.payment_id);
+            console.log('Refund processed:', refundResponse);
+          } catch (refundError) {
+            console.error('Error processing refund:', refundError);
+            // Continue with cancellation even if refund fails
+          }
+        }
         
         // Update UI to show success
         cancellationSuccess.value = true;

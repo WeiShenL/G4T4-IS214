@@ -77,7 +77,7 @@ export const verifyPayment = async (sessionId) => {
  * @param {string} paymentId - The original payment intent ID
  * @param {number} amount - Amount to refund (in cents)
  */
-export const processRefund = async (paymentId, amount) => {
+export const processRefund = async (paymentId, amount = null) => {
   try {
     const response = await fetch(`${BACKEND_API_URL}/stripe/refund`, {
       method: 'POST',

@@ -81,14 +81,15 @@ def process_cancellation(reservation_id):
     user_id = reservation_data.get("user_id")
     table_no = reservation_data.get("table_no")
     refund_amount = reservation_data.get("refund_amount")
+    payment_id = reservation_data.get("payment_id")
 
     if not user_id:
         return jsonify({"error": "No user associated with this reservation"}), 404
 
     # Get user details from customer_profiles table
     try:
-        # Using Supabase directly via API call to your existing user service
-        user_response = requests.get(f"http://localhost:5004/api/user/{user_id}")
+        # Using our user service
+        user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
         user_response.raise_for_status()
         user_data = user_response.json()
         print(f"User data received: {user_data}")
@@ -110,14 +111,17 @@ def process_cancellation(reservation_id):
             "user_phone": user_phone,
             "table_no": table_no,
             "refund_amount": refund_amount,
+            "payment_id": payment_id,  # Include payment_id for the UI to process the refund
             "message_type": "reservation.cancellation"
         }
+        
         publish_message("reservation.cancellation", notification_data)
         
         return jsonify({
             "message": "Reservation cancelled and notification sent.",
             "status": "cancelled",
-            "reservation_id": reservation_id
+            "reservation_id": reservation_id,
+            "payment_id": payment_id  # Include payment_id in the response for the UI
         }), 200
     except Exception as e:
         print(f"Error triggering notification: {str(e)}")

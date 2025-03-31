@@ -1,4 +1,10 @@
+import sys
 import os
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+sys.path.insert(0, project_root)
+
+# Standard imports
 import json
 import threading
 import pika
@@ -12,6 +18,14 @@ from datetime import datetime
 from supabase import create_client, Client as SupabaseClient
 
 # Import your RabbitMQ setup modules
+from backend.rabbitmq.amqp_setup import (
+    amqp_host,
+    amqp_port,
+    exchange_name,
+    exchange_type,
+)
+from backend.rabbitmq.amqp_lib import connect, is_connection_open
+
 import backend.rabbitmq.amqp_setup as rabbitmq_setup
 import backend.rabbitmq.amqp_lib as rabbitmq_lib
 
@@ -177,4 +191,4 @@ def health_check():
 if __name__ == '__main__':
     # Start RabbitMQ consumer in a separate thread
     threading.Thread(target=start_rabbitmq_consumer, daemon=True).start()
-    app.run(host='0.0.0.0', port=5003, debug=True)
+    app.run(host='0.0.0.0', port=5007, debug=True)
