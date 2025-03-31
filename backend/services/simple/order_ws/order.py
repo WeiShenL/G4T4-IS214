@@ -123,6 +123,18 @@ def process_refund():
         
         print(f"Refund processed: {refund.id}")
         
+         # refund is successful, delete the associated order
+        try:
+            # delete the order with the given payment_id
+            delete_response = supabase.table('orders').delete().eq('payment_id', payment_id).execute()
+            
+            if delete_response.data:
+                print(f"Order with payment_id {payment_id} deleted successfully")
+            else:
+                print(f"No order found with payment_id: {payment_id}")
+        except Exception as delete_error:
+            print(f"Error deleting order: {str(delete_error)}")
+        
         return jsonify({
             "code": 200,
             "refund": {

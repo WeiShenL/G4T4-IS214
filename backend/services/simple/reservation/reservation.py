@@ -164,7 +164,9 @@ def cancel_reservation(reservation_id):
             "status": "empty",
             "count": None,
             "price": None,
-            "time": None
+            "time": None,
+            "order_id": None,
+            "payment_id": None  
         }
         
         # Update the reservation

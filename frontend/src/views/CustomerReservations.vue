@@ -420,6 +420,9 @@ export default {
         console.error('Error during cancellation:', error);
         cancellationError.value = error.message || 'An error occurred during cancellation';
         isProcessingCancellation.value = false;
+            setTimeout(() => {
+          loadReservations();
+        }, 2000);
       }
     };
     
