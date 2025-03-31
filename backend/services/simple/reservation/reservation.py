@@ -141,8 +141,7 @@ def get_user_reservations(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# ks code
-@app.route('/reservation/cancel/<int:reservation_id>', methods=['PATCH'])
+@app.route('/api/reservation/cancel/<int:reservation_id>', methods=['PATCH'])
 def cancel_reservation(reservation_id):
     try:
         # Fetch the existing reservation
@@ -153,7 +152,13 @@ def cancel_reservation(reservation_id):
         
         reservation = response.data[0]
         
-        # Prepare update data
+        # Store important data before updating
+        refund_amount = reservation.get('price', 0)
+        table_no = reservation.get('table_no')
+        user_id = reservation.get('user_id')
+        payment_id = reservation.get('payment_id')
+        
+        # Prepare update data to clear the reservation
         update_data = {
             "user_id": None,
             "status": "empty",
@@ -161,11 +166,6 @@ def cancel_reservation(reservation_id):
             "price": None,
             "time": None
         }
-        
-        # Calculate refund amount
-        refund_amount = reservation.get('price', 0)
-        table_no = reservation.get('table_no')
-        user_id = reservation.get('user_id')
         
         # Update the reservation
         update_response = supabase.table('reservation').update(update_data).eq('reservation_id', reservation_id).execute()
@@ -177,12 +177,12 @@ def cancel_reservation(reservation_id):
             "reservation_id": reservation_id,
             "user_id": user_id,
             "table_no": table_no,
-            "refund_amount": refund_amount
+            "refund_amount": refund_amount,
+            "payment_id": payment_id
         }), 200
     
     except Exception as e:
         return jsonify({
-            "code": 500,
             "error": f"An error occurred: {str(e)}"
         }), 500
 

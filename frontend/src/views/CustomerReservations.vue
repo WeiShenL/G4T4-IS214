@@ -356,6 +356,7 @@ export default {
     };
     
     // Confirm cancellation
+    // In the confirmCancellation method
     const confirmCancellation = async () => {
       if (!selectedReservation.value) {
         return;
@@ -366,44 +367,34 @@ export default {
         isProcessingCancellation.value = true;
         cancellationError.value = '';
         
-        // Initialize Stripe
-        await initStripe();
+        console.log('Starting cancellation process for reservation:', selectedReservation.value.reservation_id);
         
-        // Get payment ID and amount from the reservation
-        const paymentId = selectedReservation.value.payment_id;
-        const refundAmount = selectedReservation.value.price * 100; // Convert to cents for Stripe
-        
-        if (!paymentId) {
-          throw new Error('No payment information found for this reservation');
-        }
-        
-        // Process refund through Stripe
-        const refundResult = await processRefund(paymentId, refundAmount);
-        
-        if (refundResult.status !== 'succeeded') {
-          throw new Error('Refund was not successful');
-        }
-        
-        // Call the cancel_booking service to complete the cancellation process
-        const response = await fetch(`http://localhost:5002/cancel/${selectedReservation.value.reservation_id}`, {
+        // Direct call to the cancel_booking microservice
+        const response = await fetch(`http://localhost:5005/cancel/${selectedReservation.value.reservation_id}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           }
         });
         
-        const data = await response.json();
+        console.log('Received response from cancellation service');
         
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to cancel reservation');
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to cancel reservation: ${response.status}`);
         }
+        
+        const data = await response.json();
+        console.log('Cancellation successful:', data);
         
         // Update UI to show success
         cancellationSuccess.value = true;
         
         // Hide modal after a short delay
         setTimeout(() => {
-          cancellationModal.value.hide();
+          if (cancellationModalInstance.value) {
+            cancellationModalInstance.value.hide();
+          }
           
           // Reload reservations
           loadReservations();

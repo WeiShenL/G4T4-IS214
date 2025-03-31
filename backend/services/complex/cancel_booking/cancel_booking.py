@@ -64,17 +64,20 @@ def publish_message(routing_key, message):
 
 @app.route('/cancel/<int:reservation_id>', methods=['POST'])
 def process_cancellation(reservation_id):
-    #Call reservation.py to cancel the reservation
+    # Call reservation.py to cancel the reservation
     try:
+        # Use the reservation API endpoint in your application
         reservation_response = requests.patch(
-            f"http://localhost:5001/reservation/cancel/{reservation_id}"
+            f"http://localhost:5002/api/reservation/cancel/{reservation_id}"
         )
         reservation_response.raise_for_status()
         reservation_data = reservation_response.json()
+        print(f"Reservation data received: {reservation_data}")
     except requests.exceptions.RequestException as e:
+        print(f"Failed to cancel reservation: {str(e)}")
         return jsonify({"error": f"Failed to cancel reservation: {str(e)}"}), 500
 
-    # Extracted user_id, table_no, and refund_amount from the response of reservtion cancellation
+    # Extract user_id, table_no, and refund_amount from the response
     user_id = reservation_data.get("user_id")
     table_no = reservation_data.get("table_no")
     refund_amount = reservation_data.get("refund_amount")
@@ -82,38 +85,43 @@ def process_cancellation(reservation_id):
     if not user_id:
         return jsonify({"error": "No user associated with this reservation"}), 404
 
-    #Call user.py to get user details
+    # Get user details from customer_profiles table
     try:
-        user_response = requests.get(f"http://localhost:5004/user/details/{user_id}")
+        # Using Supabase directly via API call to your existing user service
+        user_response = requests.get(f"http://localhost:5004/api/user/{user_id}")
         user_response.raise_for_status()
         user_data = user_response.json()
+        print(f"User data received: {user_data}")
+        
+        # Extract the user details we need
+        user_name = user_data.get("data", {}).get("customer_name", "Customer")
+        user_phone = user_data.get("data", {}).get("phone_number", "")
+        
     except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch user details: {str(e)}")
         return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
-    #Queue a notification message to RabbitMQ
+    # Queue a notification message to RabbitMQ
     try:
         notification_data = {
             "reservation_id": reservation_id,
             "user_id": user_id,
-            "user_name": user_data["name"],
-            "user_phone": user_data["phone"],
+            "user_name": user_name,
+            "user_phone": user_phone,
             "table_no": table_no,
             "refund_amount": refund_amount,
             "message_type": "reservation.cancellation"
         }
         publish_message("reservation.cancellation", notification_data)
-
-        # Step 4: Trigger reallocation
-        reallocation_data = {"reservation_id": reservation_id}
-        requests.post("http://localhost:5005/reallocate", json=reallocation_data)
         
         return jsonify({
-            "message": "Reservation cancelled, notification sent, and reallocation triggered.",
-            "status": "empty",
+            "message": "Reservation cancelled and notification sent.",
+            "status": "cancelled",
             "reservation_id": reservation_id
         }), 200
     except Exception as e:
-        return jsonify({"error": f"Error triggering notification or reallocation: {str(e)}"}), 500
+        print(f"Error triggering notification: {str(e)}")
+        return jsonify({"error": f"Error triggering notification: {str(e)}"}), 500
 
 if __name__ == '__main__':
     print("Starting cancel_booking service...")
