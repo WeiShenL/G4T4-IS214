@@ -485,8 +485,8 @@ export default {
           count: parseInt(storedPartySize),
           price: calculateTotal(),
           time: new Date(storedDateTime).toISOString(),
-          order_id: result.data.order_id
-          // stripe_payment_id: stripePaymentIntentId
+          order_id: result.data.order_id,
+          payment_id: stripePaymentIntentId  
         });
         
         if (!reservationResult.success) {

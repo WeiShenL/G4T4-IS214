@@ -92,7 +92,8 @@ def create_reservation():
             "count": data['count'],
             "price": data.get('price', 0),
             "time": data.get('time', datetime.now().isoformat()),
-            "order_id": data.get('order_id')
+            "order_id": data.get('order_id'),
+            "payment_id": data.get('payment_id') 
         }
         
         response = supabase.table('reservation').insert(new_reservation).execute()

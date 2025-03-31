@@ -47,6 +47,7 @@ def create_order():
             "order_price": data['order_price'],
             "payment_id": data['payment_id'],
             "created_at": datetime.now().isoformat(),
+            "order_type": data.get('order_type') 
         }
         
         response = supabase.table('orders').insert(new_order).execute()
