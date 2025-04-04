@@ -56,7 +56,8 @@ MESSAGE_TEMPLATES = {
     "order.confirmation": "Your order has been confirmed. Thank you for dining with us!",
     "reservation.confirmation": "Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please tap on the SMS to start the booking process...",
-    "reallocation.confirmation": "Table {table_no} booking has been confirmed. Thank you!"
+    "reallocation.confirmation": "Table {table_no} booking has been confirmed. Thank you!",
+    "delivery.pickup": "egfzgzdg" #to be edited by dom
 }
 
 # Sends an SMS via Twilio
