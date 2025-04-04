@@ -23,6 +23,7 @@ def connectAMQP():
         sys.exit(1)
 
 # Publish message to RabbitMQ
+def publish_message(routing_key, message):
     if connection is None or not rabbitmq.amqp_lib.is_connection_open(connection):
         connectAMQP()
     
