@@ -77,11 +77,12 @@ def process_cancellation(reservation_id):
         print(f"Failed to cancel reservation: {str(e)}")
         return jsonify({"error": f"Failed to cancel reservation: {str(e)}"}), 500
 
-    # Extract user_id, table_no, and refund_amount from the response
+    # Extract user_id, table_no, refund_amount, and order_id from the response
     user_id = reservation_data.get("user_id")
     table_no = reservation_data.get("table_no")
     refund_amount = reservation_data.get("refund_amount")
     payment_id = reservation_data.get("payment_id")
+    order_id = reservation_data.get("order_id")  # Get order_id if available
 
     if not user_id:
         return jsonify({"error": "No user associated with this reservation"}), 404
@@ -114,14 +115,16 @@ def process_cancellation(reservation_id):
             refund_data = refund_response.json()
             print(f"Refund processed: {refund_data}")
             
-            # Delete the order associated with this payment
-            delete_order_response = requests.delete(
-                f"http://localhost:5004/api/orders/payment/{payment_id}"
-            )
-            if delete_order_response.status_code == 200:
-                print(f"Order with payment_id {payment_id} deleted successfully")
-            else:
-                print(f"Failed to delete order or no order found with payment_id: {payment_id}")
+            # Delete the order associated with this order_id
+            if order_id:
+                # Delete by order_id if available (new method)
+                delete_order_response = requests.delete(
+                    f"http://localhost:5004/api/orders/{order_id}"
+                )
+                if delete_order_response.status_code == 200:
+                    print(f"Order with ID {order_id} deleted successfully")
+                else:
+                    print(f"Failed to delete order or no order found with ID: {order_id}")
                 
         except requests.exceptions.RequestException as e:
             print(f"Failed to process refund: {str(e)}")

@@ -87,28 +87,28 @@ def get_user_orders(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# Delete an order by payment_id
-@app.route("/api/orders/payment/<string:payment_id>", methods=['DELETE'])
-def delete_order_by_payment(payment_id):
+# Delete a new route to delete an order by order_id
+@app.route("/api/orders/<int:order_id>", methods=['DELETE'])
+def delete_order_by_id(order_id):
     try:
-        if not payment_id:
+        if not order_id:
             return jsonify({
                 "code": 400,
-                "message": "Payment ID is required"
+                "message": "Order ID is required"
             }), 400
             
-        # Delete the order with the given payment_id
-        delete_response = supabase.table('orders').delete().eq('payment_id', payment_id).execute()
+        # Delete the order with the given order_id
+        delete_response = supabase.table('orders').delete().eq('order_id', order_id).execute()
         
         if delete_response.data:
             return jsonify({
                 "code": 200,
-                "message": f"Order with payment_id {payment_id} deleted successfully"
+                "message": f"Order with ID {order_id} deleted successfully"
             })
         else:
             return jsonify({
                 "code": 404,
-                "message": f"No order found with payment_id: {payment_id}"
+                "message": f"No order found with ID: {order_id}"
             }), 404
             
     except Exception as e:

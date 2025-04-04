@@ -157,6 +157,8 @@ def cancel_reservation(reservation_id):
         table_no = reservation.get('table_no')
         user_id = reservation.get('user_id')
         payment_id = reservation.get('payment_id')
+        order_id = reservation.get('order_id')  # Make sure to include order_id
+
         
         # Prepare update data to clear the reservation
         update_data = {
@@ -180,7 +182,9 @@ def cancel_reservation(reservation_id):
             "user_id": user_id,
             "table_no": table_no,
             "refund_amount": refund_amount,
-            "payment_id": payment_id
+            "payment_id": payment_id,
+            "order_id": order_id  
+
         }), 200
     
     except Exception as e:
