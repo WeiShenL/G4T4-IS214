@@ -1,3 +1,5 @@
+# delete the reservation data row instead of editing the fields.
+
 import sys
 import os
 

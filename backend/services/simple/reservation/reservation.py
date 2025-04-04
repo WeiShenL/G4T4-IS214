@@ -1,3 +1,5 @@
+# no need for 2x patch, since we are deleting whole row when cancel, and creating new reservation when reallocation.
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
