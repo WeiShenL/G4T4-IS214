@@ -1,3 +1,4 @@
+# figure out how is order row being filled up. in order db
 # when capacity of restaurant is full, then post a request to waitlist msc at outsystems as "user_id"
 # user go thru payment process also, then order row fills up.
 

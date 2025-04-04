@@ -1,4 +1,4 @@
-# payment.py POST payment details to DB. frontend calls the post mtd.
+# payment.py POST payment details to DB. frontend calls the post mtd after stripe payment is successful
 # look at ks payment db fields
 
 from flask import Flask, request, jsonify
