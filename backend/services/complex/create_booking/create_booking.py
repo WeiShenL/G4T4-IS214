@@ -1,3 +1,4 @@
+# when capacity of restaurant is full, then post a request to waitlist msc at outsystems as "user_id"
 import sys
 import os
 

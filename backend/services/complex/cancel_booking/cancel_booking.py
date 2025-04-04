@@ -130,7 +130,7 @@ def process_cancellation(reservation_id):
             print(f"Failed to process refund: {str(e)}")
             # Continue with cancellation even if refund fails
     
-    # Queue a notification message to RabbitMQ
+    # Queue a notification message to RabbitMQ and trigger reallocation
     try:
         notification_data = {
             "reservation_id": reservation_id,
@@ -145,16 +145,20 @@ def process_cancellation(reservation_id):
         
         publish_message("reservation.cancellation", notification_data)
         
+        # Trigger reallocation
+        reallocation_data = {"reservation_id": reservation_id}
+        requests.post("http://localhost:5008/reallocate", json=reallocation_data)
+        
         return jsonify({
-            "message": "Reservation cancelled and notification sent.",
+            "message": "Reservation cancelled and notification sent, and reallocation triggered.",
             "status": "cancelled",
             "reservation_id": reservation_id,
-            "payment_id": payment_id  # Include payment_id in the response for the UI
+            "payment_id": payment_id  
         }), 200
     except Exception as e:
         print(f"Error triggering notification: {str(e)}")
-        return jsonify({"error": f"Error triggering notification: {str(e)}"}), 500
-
+        return jsonify({"error": f"Error triggering notification or reallocation: {str(e)}"}), 500
+    
 if __name__ == '__main__':
     print("Starting cancel_booking service...")
     connectAMQP()
