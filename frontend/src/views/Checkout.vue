@@ -475,9 +475,9 @@ export default {
         console.log('Creating order with payment ID:', stripePaymentIntentId);
         const result = await createOrder(order);
 
-        // create reservation in reservation svc
+        // Create reservation via create_booking microservice
         console.log('Creating reservation via microservice');
-        const reservationResult = await createReservation({
+        const reservationData = {
           restaurant_id: orderInfo.value.restaurantId,
           user_id: user.value.id,
           table_no: storedTableNo || null, 
@@ -486,12 +486,23 @@ export default {
           price: calculateTotal(),
           time: new Date(storedDateTime).toISOString(),
           order_id: result.data.order_id,
-          payment_id: stripePaymentIntentId  
+          payment_id: stripePaymentIntentId
+        };
+        
+        const reservationResponse = await fetch('http://localhost:5006/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(reservationData)
         });
         
-        if (!reservationResult.success) {
-          throw new Error(`Failed to create reservation: ${reservationResult.message}`);
+        if (!reservationResponse.ok) {
+          const errorData = await reservationResponse.json();
+          throw new Error(`Failed to create reservation: ${errorData.error || reservationResponse.statusText}`);
         }
+        
+        const reservationResult = await reservationResponse.json();
         
         if (result.success) {
           // Clear stored data from localStorage
@@ -509,7 +520,6 @@ export default {
           
           // Show success message
           orderPlaced.value = true;
-                    
         }
       } catch (error) {
         console.error('Error handling Stripe return:', error);

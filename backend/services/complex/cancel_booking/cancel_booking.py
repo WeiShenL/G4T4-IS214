@@ -102,6 +102,31 @@ def process_cancellation(reservation_id):
         print(f"Failed to fetch user details: {str(e)}")
         return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
+    # Process refund if payment_id exists
+    if payment_id:
+        try:
+            # Call the payment service to process the refund
+            refund_response = requests.post(
+                "http://localhost:5008/api/payment/refund",
+                json={"payment_id": payment_id}
+            )
+            refund_response.raise_for_status()
+            refund_data = refund_response.json()
+            print(f"Refund processed: {refund_data}")
+            
+            # Delete the order associated with this payment
+            delete_order_response = requests.delete(
+                f"http://localhost:5004/api/orders/payment/{payment_id}"
+            )
+            if delete_order_response.status_code == 200:
+                print(f"Order with payment_id {payment_id} deleted successfully")
+            else:
+                print(f"Failed to delete order or no order found with payment_id: {payment_id}")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to process refund: {str(e)}")
+            # Continue with cancellation even if refund fails
+    
     # Queue a notification message to RabbitMQ
     try:
         notification_data = {

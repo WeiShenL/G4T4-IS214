@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
-import stripe
 import json
 from supabase import create_client, Client
 from datetime import datetime
@@ -17,12 +16,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
-
-# stripe api
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-print(f"Stripe API configured with key: {stripe.api_key[:5]}...")
-webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
-print(f"Webhook secret configured: {webhook_secret[:5]}...")
 
 # create a new order with Stripe payment ID
 @app.route("/api/orders", methods=['POST'])
@@ -94,161 +87,31 @@ def get_user_orders(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# STRIPE INTEGRATION - Process a refund
-@app.route("/api/stripe/refund", methods=['POST'])
-def process_refund():
+# Delete an order by payment_id
+@app.route("/api/orders/payment/<string:payment_id>", methods=['DELETE'])
+def delete_order_by_payment(payment_id):
     try:
-        data = request.json
-        payment_id = data.get('payment_id')
-        amount = data.get('amount')  # Optional, if not provided will refund full amount
-        
         if not payment_id:
             return jsonify({
                 "code": 400,
                 "message": "Payment ID is required"
             }), 400
-        
-        # Process the refund through Stripe
-        refund_params = {
-            "payment_intent": payment_id,
-        }
-        
-        # Add amount if provided
-        if amount:
-            refund_params["amount"] = int(amount)
-        
-        print(f"Processing refund for payment intent: {payment_id}")
-        
-        refund = stripe.Refund.create(**refund_params)
-        
-        print(f"Refund processed: {refund.id}")
-        
-         # refund is successful, delete the associated order
-        try:
-            # delete the order with the given payment_id
-            delete_response = supabase.table('orders').delete().eq('payment_id', payment_id).execute()
             
-            if delete_response.data:
-                print(f"Order with payment_id {payment_id} deleted successfully")
-            else:
-                print(f"No order found with payment_id: {payment_id}")
-        except Exception as delete_error:
-            print(f"Error deleting order: {str(delete_error)}")
+        # Delete the order with the given payment_id
+        delete_response = supabase.table('orders').delete().eq('payment_id', payment_id).execute()
         
-        return jsonify({
-            "code": 200,
-            "refund": {
-                "id": refund.id,
-                "amount": refund.amount,
-                "status": refund.status
-            }
-        })
-    
-    except Exception as e:
-        print(f"Error processing refund: {str(e)}")
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
-
-# STRIPE INTEGRATION - Create a checkout session
-@app.route("/api/stripe/create-checkout-session", methods=['POST'])
-def create_checkout_session():
-    try:
-        data = request.json
-        
-        # Extract order details
-        order_details = data.get('orderDetails')
-        customer_id = data.get('customerId')
-        success_url = data.get('successUrl')
-        cancel_url = data.get('cancelUrl')
-        
-        # Validate required parameters
-        if not all([order_details, customer_id, success_url, cancel_url]):
+        if delete_response.data:
             return jsonify({
-                "code": 400,
-                "message": "Missing required parameters"
-            }), 400
-        
-        # Format line items for Stripe
-        line_items = [{
-            'price_data': {
-                'currency': order_details.get('currency', 'usd'),
-                'product_data': {
-                    'name': order_details.get('itemName', 'Food Order'),
-                    'description': f"From {order_details.get('restaurantName', 'Restaurant')}",
-                },
-                'unit_amount': int(order_details.get('amount') / order_details.get('quantity')),  # in cents
-            },
-            'quantity': order_details.get('quantity', 1),
-        }]
-        
-        # Add metadata to the session
-        metadata = {
-            'restaurantId': str(order_details.get('restaurantId')),
-            'restaurantName': order_details.get('restaurantName'),
-            'userId': customer_id
-        }
-        
-        print(f"Creating Stripe checkout session with line items: {line_items}")
-        
-        # Create Stripe checkout session
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata=metadata
-        )
-        
-        print(f"Checkout session created: {session.id}")
-        
-        return jsonify({
-            "code": 200,
-            "sessionId": session.id,
-            "url": session.url
-        })
-    
-    except Exception as e:
-        print(f"Error creating checkout session: {str(e)}")
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
-
-# STRIPE INTEGRATION - Verify payment
-@app.route("/api/stripe/verify-payment/<string:session_id>", methods=['GET'])
-def verify_payment(session_id):
-    try:
-        print(f"Verifying payment for session: {session_id}")
-        
-        # Retrieve the session
-        session = stripe.checkout.Session.retrieve(session_id)
-        
-        # Check if payment was successful
-        if session.payment_status != 'paid':
+                "code": 200,
+                "message": f"Order with payment_id {payment_id} deleted successfully"
+            })
+        else:
             return jsonify({
-                "code": 400,
-                "message": "Payment not completed"
-            }), 400
-        
-        # Get the payment intent
-        payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
-        
-        print(f"Payment verified: {payment_intent.id} with status {payment_intent.status}")
-        
-        return jsonify({
-            "code": 200,
-            "paymentIntent": {
-                "id": payment_intent.id,
-                "status": payment_intent.status,
-                "amount": payment_intent.amount
-            }
-        })
-    
+                "code": 404,
+                "message": f"No order found with payment_id: {payment_id}"
+            }), 404
+            
     except Exception as e:
-        print(f"Error verifying payment: {str(e)}")
         return jsonify({
             "code": 500,
             "message": f"An error occurred: {str(e)}"
