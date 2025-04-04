@@ -1,4 +1,13 @@
 # when capacity of restaurant is full, then post a request to waitlist msc at outsystems as "user_id"
+# user go thru payment process also, then order row fills up.
+
+
+# create order, row order db 
+
+# aft create order, if (count how many reservations based on that res ID)
+# more than capacity instead submit user_id to the waitlist instead of creating reservation
+
+
 import sys
 import os
 
@@ -62,6 +71,8 @@ def publish_message(routing_key, message):
         body=message_json
     )
     print(f"  Published message to {routing_key}: {message_json}")
+
+# order create first, once success 200 then call reservation
 
 @app.route('/create', methods=['POST'])
 def call_create_reservation():

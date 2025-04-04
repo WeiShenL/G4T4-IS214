@@ -147,7 +147,7 @@ def process_cancellation(reservation_id):
         
         # Trigger reallocation
         reallocation_data = {"reservation_id": reservation_id}
-        requests.post("http://localhost:5008/reallocate", json=reallocation_data)
+        requests.post("http://localhost:5009/reallocate", json=reallocation_data)
         
         return jsonify({
             "message": "Reservation cancelled and notification sent, and reallocation triggered.",
