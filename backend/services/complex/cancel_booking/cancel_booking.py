@@ -69,7 +69,7 @@ def process_cancellation(reservation_id):
     # Call reservation.py to cancel the reservation
     try:
         # Use the reservation API endpoint in your application
-        reservation_response = requests.patch(
+        reservation_response = requests.delete(
             f"http://localhost:5002/api/reservation/cancel/{reservation_id}"
         )
         reservation_response.raise_for_status()
