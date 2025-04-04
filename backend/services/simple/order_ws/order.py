@@ -46,7 +46,8 @@ def create_order():
             "quantity": data['quantity'],
             "order_price": data['order_price'],
             "payment_id": data['payment_id'],
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "order_type": data.get('order_type') 
         }
         
         response = supabase.table('orders').insert(new_order).execute()
@@ -88,6 +89,63 @@ def get_user_orders(user_id):
             "message": f"No orders found for user: {user_id}"
         }), 404
     except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
+# STRIPE INTEGRATION - Process a refund
+@app.route("/api/stripe/refund", methods=['POST'])
+def process_refund():
+    try:
+        data = request.json
+        payment_id = data.get('payment_id')
+        amount = data.get('amount')  # Optional, if not provided will refund full amount
+        
+        if not payment_id:
+            return jsonify({
+                "code": 400,
+                "message": "Payment ID is required"
+            }), 400
+        
+        # Process the refund through Stripe
+        refund_params = {
+            "payment_intent": payment_id,
+        }
+        
+        # Add amount if provided
+        if amount:
+            refund_params["amount"] = int(amount)
+        
+        print(f"Processing refund for payment intent: {payment_id}")
+        
+        refund = stripe.Refund.create(**refund_params)
+        
+        print(f"Refund processed: {refund.id}")
+        
+         # refund is successful, delete the associated order
+        try:
+            # delete the order with the given payment_id
+            delete_response = supabase.table('orders').delete().eq('payment_id', payment_id).execute()
+            
+            if delete_response.data:
+                print(f"Order with payment_id {payment_id} deleted successfully")
+            else:
+                print(f"No order found with payment_id: {payment_id}")
+        except Exception as delete_error:
+            print(f"Error deleting order: {str(delete_error)}")
+        
+        return jsonify({
+            "code": 200,
+            "refund": {
+                "id": refund.id,
+                "amount": refund.amount,
+                "status": refund.status
+            }
+        })
+    
+    except Exception as e:
+        print(f"Error processing refund: {str(e)}")
         return jsonify({
             "code": 500,
             "message": f"An error occurred: {str(e)}"

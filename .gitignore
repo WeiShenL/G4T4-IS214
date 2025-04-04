@@ -31,3 +31,14 @@ yarn-error.log*
 Thumbs.db
 frontend/.DS_Store
 backend/.DS_Store
+
+#virtual env
+**/venv/
+**/venv/
+**/.venv/
+**/env/
+**/.env/
+
+# Python cache files
+**/__pycache__/
+**/*.py[cod]

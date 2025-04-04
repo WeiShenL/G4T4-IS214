@@ -4,6 +4,8 @@ import { supabaseClient } from './supabase';
 // base URLs for the API
 const RESTAURANT_API_URL = 'http://localhost:5001/api';
 const RESERVATION_API_URL = 'http://localhost:5002/api';
+const CANCEL_BOOKING_URL = 'http://localhost:5005/cancel';
+
 
 // get auth headers
 const getAuthHeaders = async () => {
@@ -106,6 +108,45 @@ export const getUserReservations = async (userId) => {
   } catch (error) {
     console.error('Error fetching user reservations:', error);
     throw error;
+  }
+};
+
+// Cancel a reservation
+export const cancelReservation = async (reservationId) => {
+  try {
+    if (!reservationId) {
+      throw new Error('Reservation ID is required');
+    }
+    
+    const headers = await getAuthHeaders();
+    
+    console.log(`Sending cancellation request to: ${CANCEL_BOOKING_URL}/${reservationId}`);
+    
+    const response = await fetch(`${CANCEL_BOOKING_URL}/${reservationId}`, {
+      method: 'POST',
+      headers
+    });
+    
+    const data = await response.json();
+    console.log('Cancellation API response:', data);
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to cancel reservation');
+    }
+    
+    return {
+      success: true,
+      message: data.message || 'Reservation cancelled successfully',
+      data: data
+    };
+  } catch (error) {
+    console.error('Error cancelling reservation:', error);
+    // Return a structured error response instead of throwing
+    return {
+      success: false,
+      message: error.message || 'An error occurred during cancellation',
+      error: error
+    };
   }
 };
 

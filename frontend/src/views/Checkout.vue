@@ -99,66 +99,6 @@
                   <h5>Total</h5>
                   <h5>${{ calculateTotal().toFixed(2) }}</h5>
                 </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Reservation Info and Checkout Button -->
-          <div class="col-md-7">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="mb-0">Reservation Information</h3>
-              </div>
-              <div class="card-body">
-                <div class="mb-3">
-                  <label for="partySize" class="form-label">Number of People</label>
-                  <input 
-                    type="number" 
-                    class="form-control" 
-                    id="partySize" 
-                    v-model="partySize" 
-                    min="1" 
-                    max="20" 
-                    required
-                  >
-                  <small class="text-muted">Please specify how many people will be dining</small>
-                </div>
-                
-                <div class="mb-3">
-                  <label for="preferredTable" class="form-label">Preferred Table Number</label>
-                  <input 
-                    type="number" 
-                    class="form-control" 
-                    id="preferredTable" 
-                    v-model="preferredTable" 
-                    min="1"
-                    required
-                  >
-                  <small class="text-muted">Please fill in</small>
-                </div>
-                
-                <div class="mb-3">
-                  <label for="reservationDateTime" class="form-label">Reservation Date & Time</label>
-                  <input 
-                    type="datetime-local" 
-                    class="form-control" 
-                    id="reservationDateTime" 
-                    v-model="reservationDateTime" 
-                    required
-                  >
-                </div>
-                
-                <div class="mb-3">
-                  <label for="specialRequests" class="form-label">Special Requests (Optional)</label>
-                  <textarea 
-                    class="form-control" 
-                    id="specialRequests" 
-                    v-model="specialRequests" 
-                    rows="2" 
-                    placeholder="E.g., Birthday celebration, allergies, etc."
-                  ></textarea>
-                </div>
-                
                 <div v-if="paymentError" class="alert alert-danger mb-3">
                   {{ paymentError }}
                 </div>
@@ -190,6 +130,67 @@
               </div>
             </div>
           </div>
+          
+          <!-- Reservation Info and Checkout Button -->
+          <div class="col-md-7" v-if="orderType === 'dine_in'">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="mb-0">Reservation Information</h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="partySize" class="form-label">Number of People</label>
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    id="partySize" 
+                    v-model="partySize" 
+                    min="1" 
+                    max="20" 
+                    required
+                  >
+                  <small class="text-muted">Please specify how many people will be dining</small>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="preferredTable" class="form-label">Preferred Table Number (Optional)</label>
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    id="preferredTable" 
+                    v-model="preferredTable" 
+                    min="1"
+                    required
+                  >
+                  <small class="text-muted">Leave empty for automatic assignmen</small>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="reservationDateTime" class="form-label">Reservation Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    class="form-control" 
+                    id="reservationDateTime" 
+                    v-model="reservationDateTime" 
+                    required
+                  >
+                </div>
+                
+                <div class="mb-3">
+                  <label for="specialRequests" class="form-label">Special Requests (Optional)</label>
+                  <textarea 
+                    class="form-control" 
+                    id="specialRequests" 
+                    v-model="specialRequests" 
+                    rows="2" 
+                    placeholder="E.g., Birthday celebration, allergies, etc."
+                  ></textarea>
+                </div>
+                
+
+              </div>
+            </div>
+          </div>
         </div>
         
         <!-- No Order Info -->
@@ -217,6 +218,10 @@ import { initStripe, createCheckoutSession, verifyPayment } from '@/services/str
 import { createReservation } from '@/services/restaurantService';
 
 export default {
+  data() {
+    return {
+      orderType: localStorage.getItem('orderType') };
+    },
   name: 'Checkout',
   setup() {
     const router = useRouter();
@@ -376,7 +381,8 @@ export default {
           itemName: orderInfo.value.item.name,
           quantity: orderInfo.value.item.quantity,
           amount: calculateTotal() * 100, // Stripe uses cents
-          currency: 'usd'
+          currency: 'usd',
+          order_type: localStorage.getItem('orderType')
         };
         
         // Set up success and cancel URLs
@@ -449,7 +455,8 @@ export default {
         const storedPartySize = localStorage.getItem('reservation_party_size');
         const storedTableNo = localStorage.getItem('reservation_table_no');
         const storedDateTime = localStorage.getItem('reservation_date_time');
-        
+        const storedOrderType = localStorage.getItem('orderType');
+
         if (!storedPartySize || !storedDateTime) {
           throw new Error('Reservation information not found');
         }
@@ -461,23 +468,25 @@ export default {
           item_name: orderInfo.value.item.name,
           quantity: orderInfo.value.item.quantity,
           order_price: calculateTotal(),
-          payment_id: stripePaymentIntentId
+          payment_id: stripePaymentIntentId,
+          order_type: storedOrderType
         };
         
         console.log('Creating order with payment ID:', stripePaymentIntentId);
         const result = await createOrder(order);
-        
+
         // create reservation in reservation svc
         console.log('Creating reservation via microservice');
         const reservationResult = await createReservation({
           restaurant_id: orderInfo.value.restaurantId,
           user_id: user.value.id,
-          table_no: storedTableNo || null,
+          table_no: storedTableNo || null, 
           status: 'Booked',
           count: parseInt(storedPartySize),
           price: calculateTotal(),
           time: new Date(storedDateTime).toISOString(),
-          stripe_payment_id: stripePaymentIntentId
+          order_id: result.data.order_id,
+          payment_id: stripePaymentIntentId  
         });
         
         if (!reservationResult.success) {
@@ -493,7 +502,8 @@ export default {
           localStorage.removeItem('reservation_special_requests');
           localStorage.removeItem('stripe_payment_intent_id');
           localStorage.removeItem('stripe_amount');
-          
+          localStorage.removeItem('orderType');
+
           // Set payment ID for display
           paymentId.value = stripePaymentIntentId;
           
