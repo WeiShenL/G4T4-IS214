@@ -1,3 +1,5 @@
+#TODO: remove reallocation patch method
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -141,10 +143,11 @@ def get_user_reservations(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-@app.route('/api/reservation/cancel/<int:reservation_id>', methods=['PATCH'])
-def cancel_reservation(reservation_id):
+# changed to delete whole reservation row when cancellation
+@app.route('/api/reservation/cancel/<int:reservation_id>', methods=['DELETE'])
+def delete_reservation(reservation_id):
     try:
-        # Fetch the existing reservation
+        # First fetch the reservation to ensure it exists and to return its data
         response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
         
         if not response.data:
@@ -152,35 +155,26 @@ def cancel_reservation(reservation_id):
         
         reservation = response.data[0]
         
-        # Store important data before updating
-        refund_amount = reservation.get('price', 0)
-        table_no = reservation.get('table_no')
+        # Store important data before deleting
         user_id = reservation.get('user_id')
+        table_no = reservation.get('table_no')
+        price = reservation.get('price', 0)
         payment_id = reservation.get('payment_id')
+        order_id = reservation.get('order_id')  # Include order_id
         
-        # Prepare update data to clear the reservation
-        update_data = {
-            "user_id": None,
-            "status": "empty",
-            "count": None,
-            "price": None,
-            "time": None,
-            "order_id": None,
-            "payment_id": None  
-        }
+        # Delete the reservation
+        delete_response = supabase.table('reservation').delete().eq('reservation_id', reservation_id).execute()
         
-        # Update the reservation
-        update_response = supabase.table('reservation').update(update_data).eq('reservation_id', reservation_id).execute()
-        
-        if not update_response.data:
-            return jsonify({"error": "Failed to update reservation"}), 500
+        if not delete_response.data:
+            return jsonify({"error": "Failed to delete reservation"}), 500
         
         return jsonify({
             "reservation_id": reservation_id,
             "user_id": user_id,
             "table_no": table_no,
-            "refund_amount": refund_amount,
-            "payment_id": payment_id
+            "refund_amount": price,
+            "payment_id": payment_id,
+            "order_id": order_id
         }), 200
     
     except Exception as e:
@@ -188,7 +182,7 @@ def cancel_reservation(reservation_id):
             "error": f"An error occurred: {str(e)}"
         }), 500
 
-# ks code
+# TODO: can be removed; just run create reservation instead of this  
 @app.route('/reservation/reallocate/<int:reservation_id>', methods=['PATCH'])
 def update_reservation(reservation_id):
     try:

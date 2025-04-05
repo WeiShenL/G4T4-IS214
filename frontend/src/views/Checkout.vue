@@ -213,9 +213,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getCurrentUser, signOut, supabaseClient } from '@/services/supabase';
-import { createOrder } from '@/services/menuService';
 import { initStripe, createCheckoutSession, verifyPayment } from '@/services/stripeService';
-import { createReservation } from '@/services/restaurantService';
 
 export default {
   data() {
@@ -461,39 +459,39 @@ export default {
           throw new Error('Reservation information not found');
         }
         
-        // Create the order with payment ID
-        const order = {
-          user_id: user.value.id,
-          restaurant_id: orderInfo.value.restaurantId,
-          item_name: orderInfo.value.item.name,
-          quantity: orderInfo.value.item.quantity,
-          order_price: calculateTotal(),
-          payment_id: stripePaymentIntentId,
-          order_type: storedOrderType
-        };
-        
-        console.log('Creating order with payment ID:', stripePaymentIntentId);
-        const result = await createOrder(order);
-
-        // create reservation in reservation svc
-        console.log('Creating reservation via microservice');
-        const reservationResult = await createReservation({
+        // Create booking (order + reservation) via create_booking microservice
+        console.log('Creating booking via microservice');
+        const bookingData = {
           restaurant_id: orderInfo.value.restaurantId,
           user_id: user.value.id,
           table_no: storedTableNo || null, 
           status: 'Booked',
           count: parseInt(storedPartySize),
-          price: calculateTotal(),
+          order_price: calculateTotal(),
           time: new Date(storedDateTime).toISOString(),
-          order_id: result.data.order_id,
-          payment_id: stripePaymentIntentId  
+          payment_id: stripePaymentIntentId,
+          item_name: orderInfo.value.item.name,
+          quantity: orderInfo.value.item.quantity,
+          order_type: storedOrderType
+        };
+
+        console.log('Creating booking with data:', bookingData);
+        const bookingResponse = await fetch('http://localhost:5006/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bookingData)
         });
-        
-        if (!reservationResult.success) {
-          throw new Error(`Failed to create reservation: ${reservationResult.message}`);
+
+        if (!bookingResponse.ok) {
+          const errorData = await bookingResponse.json();
+          throw new Error(`Failed to create booking: ${errorData.error || bookingResponse.statusText}`);
         }
+
+        const bookingResult = await bookingResponse.json();
         
-        if (result.success) {
+        if (bookingResult.status === "booked") {
           // Clear stored data from localStorage
           localStorage.removeItem('orderInfo');
           localStorage.removeItem('reservation_party_size');
@@ -509,7 +507,6 @@ export default {
           
           // Show success message
           orderPlaced.value = true;
-                    
         }
       } catch (error) {
         console.error('Error handling Stripe return:', error);

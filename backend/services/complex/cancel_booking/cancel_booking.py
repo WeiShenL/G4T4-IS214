@@ -1,3 +1,5 @@
+# delete the reservation data row instead of editing the fields.
+
 import sys
 import os
 
@@ -67,7 +69,7 @@ def process_cancellation(reservation_id):
     # Call reservation.py to cancel the reservation
     try:
         # Use the reservation API endpoint in your application
-        reservation_response = requests.patch(
+        reservation_response = requests.delete(
             f"http://localhost:5002/api/reservation/cancel/{reservation_id}"
         )
         reservation_response.raise_for_status()
@@ -77,11 +79,12 @@ def process_cancellation(reservation_id):
         print(f"Failed to cancel reservation: {str(e)}")
         return jsonify({"error": f"Failed to cancel reservation: {str(e)}"}), 500
 
-    # Extract user_id, table_no, and refund_amount from the response
+    # Extract user_id, table_no, refund_amount, and order_id from the response
     user_id = reservation_data.get("user_id")
     table_no = reservation_data.get("table_no")
     refund_amount = reservation_data.get("refund_amount")
     payment_id = reservation_data.get("payment_id")
+    order_id = reservation_data.get("order_id")  # Get order_id if available
 
     if not user_id:
         return jsonify({"error": "No user associated with this reservation"}), 404
@@ -102,7 +105,34 @@ def process_cancellation(reservation_id):
         print(f"Failed to fetch user details: {str(e)}")
         return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
-    # Queue a notification message to RabbitMQ
+    # Process refund if payment_id exists
+    if payment_id:
+        try:
+            # Call the payment service to process the refund
+            refund_response = requests.post(
+                "http://localhost:5008/api/payment/refund",
+                json={"payment_id": payment_id}
+            )
+            refund_response.raise_for_status()
+            refund_data = refund_response.json()
+            print(f"Refund processed: {refund_data}")
+            
+            # Delete the order associated with this order_id
+            if order_id:
+                # Delete by order_id if available (new method)
+                delete_order_response = requests.delete(
+                    f"http://localhost:5004/api/orders/{order_id}"
+                )
+                if delete_order_response.status_code == 200:
+                    print(f"Order with ID {order_id} deleted successfully")
+                else:
+                    print(f"Failed to delete order or no order found with ID: {order_id}")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to process refund: {str(e)}")
+            # Continue with cancellation even if refund fails
+    
+    # Queue a notification message to RabbitMQ and trigger reallocation
     try:
         notification_data = {
             "reservation_id": reservation_id,
@@ -117,16 +147,20 @@ def process_cancellation(reservation_id):
         
         publish_message("reservation.cancellation", notification_data)
         
+        # Trigger reallocation
+        reallocation_data = {"reservation_id": reservation_id}
+        requests.post("http://localhost:5009/reallocate", json=reallocation_data)
+        
         return jsonify({
-            "message": "Reservation cancelled and notification sent.",
+            "message": "Reservation cancelled and notification sent, and reallocation triggered.",
             "status": "cancelled",
             "reservation_id": reservation_id,
-            "payment_id": payment_id  # Include payment_id in the response for the UI
+            "payment_id": payment_id  
         }), 200
     except Exception as e:
         print(f"Error triggering notification: {str(e)}")
-        return jsonify({"error": f"Error triggering notification: {str(e)}"}), 500
-
+        return jsonify({"error": f"Error triggering notification or reallocation: {str(e)}"}), 500
+    
 if __name__ == '__main__':
     print("Starting cancel_booking service...")
     connectAMQP()
