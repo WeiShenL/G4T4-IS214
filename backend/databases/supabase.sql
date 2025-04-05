@@ -94,3 +94,12 @@ create table public.user_types (
     )
   )
 ) TABLESPACE pg_default;
+
+create table public.payments (
+  payment_id serial not null,
+  stripe_payment_id character varying(255) not null,
+  amount numeric(10, 2) not null,
+  status character varying(50) not null,
+  created_at timestamp with time zone null default now(),
+  constraint payments_pkey primary key (payment_id)
+) TABLESPACE pg_default;

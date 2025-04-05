@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import stripe
 from datetime import datetime
+from supabase import create_client, Client
 
 load_dotenv()
 
@@ -16,6 +17,10 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 print(f"Stripe API configured with key: {stripe.api_key[:5]}...")
 webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 print(f"Webhook secret configured: {webhook_secret[:5]}...")
+
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY')
+supabase: Client = create_client(supabase_url, supabase_key)
 
 # Process a refund
 @app.route("/api/payment/refund", methods=['POST'])
@@ -128,7 +133,7 @@ def create_checkout_session():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# Verify payment
+# Verify payment and update payment db for logging purposes
 @app.route("/api/payment/verify-payment/<string:session_id>", methods=['GET'])
 def verify_payment(session_id):
     try:
@@ -146,6 +151,19 @@ def verify_payment(session_id):
         
         # Get the payment intent
         payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
+        
+        # Store payment record in the database
+        payment_record = {
+            "stripe_payment_id": payment_intent.id,
+            "amount": payment_intent.amount / 100,  # Convert cents to dollars
+            "status": payment_intent.status
+        }
+        
+        # Insert payment record into the database
+        response = supabase.table('payments').insert(payment_record).execute()
+        
+        if not response.data:
+            print(f"Warning: Failed to save payment record to database")
         
         print(f"Payment verified: {payment_intent.id} with status {payment_intent.status}")
         

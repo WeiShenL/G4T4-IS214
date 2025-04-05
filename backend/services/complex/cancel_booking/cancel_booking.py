@@ -1,3 +1,5 @@
+# delete the reservation data row instead of editing the fields.
+
 import sys
 import os
 
@@ -67,7 +69,7 @@ def process_cancellation(reservation_id):
     # Call reservation.py to cancel the reservation
     try:
         # Use the reservation API endpoint in your application
-        reservation_response = requests.patch(
+        reservation_response = requests.delete(
             f"http://localhost:5002/api/reservation/cancel/{reservation_id}"
         )
         reservation_response.raise_for_status()
@@ -147,7 +149,7 @@ def process_cancellation(reservation_id):
         
         # Trigger reallocation
         reallocation_data = {"reservation_id": reservation_id}
-        requests.post("http://localhost:5008/reallocate", json=reallocation_data)
+        requests.post("http://localhost:5009/reallocate", json=reallocation_data)
         
         return jsonify({
             "message": "Reservation cancelled and notification sent, and reallocation triggered.",
