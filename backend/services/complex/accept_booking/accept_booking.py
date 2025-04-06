@@ -7,6 +7,7 @@ import pika
 import time
 import uuid
 import random
+from flask_cors import CORS
 
 # Add project root to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
@@ -22,6 +23,7 @@ from backend.rabbitmq.amqp_setup import (
 )
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Global connection variables
 connection = None
@@ -69,6 +71,7 @@ def accept_booking():
     try:
         # Parse incoming JSON data
         data = request.get_json()
+        print(f"Received data: {data}")
 
         # Extract required fields
         reservation_id = data.get("reservation_id")
@@ -77,27 +80,37 @@ def accept_booking():
         payment_id = data.get("payment_id")
         order_id = data.get("order_id")
         price = data.get("price")
-
+        booking_time = data.get("booking_time")
+        
         # Validate required fields
-        if not all([reservation_id, user_id, count, payment_id, order_id, price]):
-            return jsonify({"error": "Missing required fields"}), 400
+        if not all([reservation_id, user_id, count]):
+            missing_fields = []
+            for field in ['reservation_id', 'user_id', 'count']:
+                if not data.get(field):
+                    missing_fields.append(field)
+            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
-        # Step 1: Generate a new reservation ID
-        new_reservation_id = random.randrange(200,999)  
+        # Step 1: Generate a new reservation ID if needed
+        new_reservation_id = data.get("new_reservation_id", random.randrange(200, 999))
 
         # Step 2: Update Reservation Details via Reservation Service
         try:
             print(f"Updating reservation details for reservation ID: {reservation_id}")
             update_payload = {
-                "reservation_id": new_reservation_id,
+                "new_reservation_id": new_reservation_id,
                 "status": "Booked",
                 "count": count,
                 "price": price,
                 "order_id": order_id,
                 "payment_id": payment_id
             }
+            
+            # Add booking_time if provided
+            if booking_time:
+                update_payload["booking_time"] = booking_time
+                
             update_response = requests.patch(
-                f"http://localhost:5002/reallocate_confirm_booking/{reservation_id}",
+                f"http://localhost:5002/reservation/reallocate_confirm_booking/{reservation_id}",
                 json=update_payload
             )
             update_response.raise_for_status()
@@ -110,22 +123,27 @@ def accept_booking():
             print(f"Error updating reservation: {str(e)}")
             return jsonify({"error": f"Failed to update reservation: {str(e)}"}), 500
 
-        # Step 3: Fetch User Details via User Service
-        try:
-            print(f"Fetching user details for user ID: {user_id}")
-            user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
-            user_response.raise_for_status()
-            user_data = user_response.json()
+        # Step 3: Get user details - either from the request data or fetch from User Service
+        username = data.get("username")
+        phone_number = data.get("phone_number")
+        
+        # If user details not provided in request, fetch from User Service
+        if not username or not phone_number:
+            try:
+                print(f"Fetching user details for user ID: {user_id}")
+                user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+                user_response.raise_for_status()
+                user_data = user_response.json()
 
-            if user_data.get("code") != 200:
-                print(f"Error getting user data: {user_data}")
-                return jsonify({"error": "Failed to get user details"}), 500
+                if user_data.get("code") != 200:
+                    print(f"Error getting user data: {user_data}")
+                    return jsonify({"error": "Failed to get user details"}), 500
 
-            username = user_data.get("data", {}).get("customer_name", "Customer")
-            phone_number = user_data.get("data", {}).get("phone_number", "")
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching user details: {str(e)}")
-            return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
+                username = user_data.get("data", {}).get("customer_name", "Customer")
+                phone_number = user_data.get("data", {}).get("phone_number", "")
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching user details: {str(e)}")
+                return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
         # Step 4: Queue Notification Message to RabbitMQ
         try:
@@ -134,6 +152,7 @@ def accept_booking():
                 "username": username,
                 "phone_number": phone_number,
                 "table_no": table_no,
+                "booking_time": booking_time,
                 "message_type": "reallocation.confirmation"
             }
             publish_message("reallocation.confirmation", notification_data)
@@ -150,7 +169,8 @@ def accept_booking():
             "username": username,
             "phone_number": phone_number,
             "table_no": table_no,
-            "status": "Booked"
+            "status": "Booked",
+            "booking_time": booking_time
         }), 200
 
     except Exception as e:

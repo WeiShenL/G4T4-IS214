@@ -6,6 +6,7 @@ const RESTAURANT_API_URL = 'http://localhost:5001/api';
 const RESERVATION_API_URL = 'http://localhost:5002/api';
 const CANCEL_BOOKING_URL = 'http://localhost:5005/cancel';
 const REALLOCATION_URL = 'http://localhost:5002/reservation/reallocate_confirm_booking';
+const ACCEPT_BOOKING_URL = 'http://localhost:5010/accept-booking';
 
 // get auth headers
 const getAuthHeaders = async () => {
@@ -141,43 +142,49 @@ export const acceptReallocation = async (acceptData) => {
     
     console.log(`Accepting reallocation for reservation ID: ${reservationId}`);
     
-    // Create payment process data
-    let paymentData = {
-      amount: 0,
-      payment_method: 'card'
-    };
+    // Make a request to the order service to retrieve order details by user_id
+    const orderResponse = await fetch(`http://localhost:5004/api/orders/user/${acceptData.user_id}`);
     
-    // If there's a menu item selected, include its price
-    if (acceptData.menu_item) {
-      paymentData.amount = Number(acceptData.menu_item.price) * acceptData.menu_item.quantity;
+    if (!orderResponse.ok) {
+      throw new Error('Failed to retrieve order information');
     }
     
-    // Process payment (mock for now)
-    const paymentId = `py_${Date.now()}`;
-    console.log(`Payment processed with ID: ${paymentId}`);
-    
-    // Create order if menu item is selected
+    const orderData = await orderResponse.json();
     let orderId = null;
-    if (acceptData.menu_item) {
-      // Mock order creation
+    let paymentId = null;
+    let price = 0;
+    
+    // Extract order details if available
+    if (orderData.code === 200 && orderData.data && orderData.data.orders && orderData.data.orders.length > 0) {
+      // Assuming the first order is the most recent one
+      const order = orderData.data.orders[0];
+      orderId = order.order_id;
+      paymentId = order.payment_id;
+      price = order.order_price;
+    } else {
+      console.log('No order found for user, using default values');
+      // Generate mock data if no orders found
       orderId = Math.floor(Math.random() * 1000);
-      console.log(`Order created with ID: ${orderId}`);
+      paymentId = `py_${Date.now()}`;
+      price = 0;
     }
     
-    // Send confirmation to the reallocation endpoint
-    const reallocationData = {
-      new_reservation_id: reservationId,
-      status: 'Booked',
-      count: acceptData.party_size,
-      price: paymentData.amount,
+    // Prepare data for the accept-booking endpoint
+    const bookingData = {
+      reservation_id: reservationId,
+      user_id: acceptData.user_id,
+      count: acceptData.count,
+      payment_id: paymentId,
       order_id: orderId,
-      payment_id: paymentId
+      price: price,
+      booking_time: acceptData.booking_time
     };
     
-    const response = await fetch(`${REALLOCATION_URL}/${reservationId}`, {
-      method: 'PATCH',
+    // Send the data to the accept-booking endpoint
+    const response = await fetch(ACCEPT_BOOKING_URL, {
+      method: 'POST',
       headers,
-      body: JSON.stringify(reallocationData)
+      body: JSON.stringify(bookingData)
     });
     
     if (!response.ok) {
@@ -186,7 +193,7 @@ export const acceptReallocation = async (acceptData) => {
     }
     
     const data = await response.json();
-    console.log('Reallocation confirmed:', data);
+    console.log('Booking accepted:', data);
     
     return {
       success: true,

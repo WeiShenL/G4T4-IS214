@@ -72,7 +72,7 @@
               <!-- Booking Offer Details -->
               <div v-if="!isLoading && !bookingAccepted && reservation" class="card mb-4">
                 <div class="card-header bg-warning text-dark">
-                  <h3 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Limited Time Offer</h3>
+                  <h3 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Table Offer</h3>
                 </div>
                 <div class="card-body">
                   <div class="reservation-details">
@@ -86,36 +86,24 @@
                           <span class="detail-label">Table Number:</span>
                           <span class="detail-value">{{ reservation.table_no }}</span>
                         </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Date:</span>
-                          <span class="detail-value">{{ formatDate(reservation.time) }}</span>
-                        </div>
                       </div>
                       <div class="col-md-6">
                         <div class="detail-item">
-                          <span class="detail-label">Time:</span>
-                          <span class="detail-value">{{ formatTime(reservation.time) }}</span>
-                        </div>
-                        <div class="detail-item">
                           <span class="detail-label">Status:</span>
                           <span class="detail-value status-badge status-pending">{{ reservation.status }}</span>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Offer Expires:</span>
-                          <span class="detail-value text-danger">{{ offerExpiryTime }}</span>
                         </div>
                       </div>
                     </div>
                     
                     <div class="alert alert-info mb-4">
                       <i class="fas fa-info-circle me-2"></i>
-                      <strong>This offer is available only for you!</strong> Someone cancelled their reservation and you are next in line on our waitlist. This table will be held for you for a limited time only.
+                      <strong>This offer is available only for you!</strong> Someone cancelled their reservation and you are next in line on our waitlist.
                     </div>
                     
-                    <!-- Order Form -->
-                    <h4 class="mb-3">Pre-Order Options</h4>
+                    <!-- Booking Form -->
+                    <h4 class="mb-3">Booking Details</h4>
                     <div class="row mb-3">
-                      <div class="col-md-6">
+                      <div class="col-md-4">
                         <div class="form-group mb-3">
                           <label for="partySize" class="form-label">Number of People</label>
                           <input 
@@ -129,44 +117,28 @@
                           >
                         </div>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-md-4">
                         <div class="form-group mb-3">
-                          <label for="menuItem" class="form-label">Pre-Order Item (Optional)</label>
-                          <select class="form-select" id="menuItem" v-model="selectedMenuItem">
-                            <option value="">Select an item (optional)</option>
-                            <option v-for="item in menuItems" :key="item.menu_id" :value="item">
-                              {{ item.item_name }} (${{ Number(item.price).toFixed(2) }})
-                            </option>
-                          </select>
+                          <label for="bookingDate" class="form-label">Date</label>
+                          <input
+                            type="date"
+                            class="form-control"
+                            id="bookingDate"
+                            v-model="bookingDate"
+                            required
+                          >
                         </div>
                       </div>
-                    </div>
-                    
-                    <div v-if="selectedMenuItem" class="mb-4">
-                      <div class="selected-menu-item p-3 border rounded">
-                        <h5>{{ selectedMenuItem.item_name }}</h5>
-                        <p class="text-muted mb-2">{{ selectedMenuItem.description || 'No description available' }}</p>
-                        
-                        <div class="d-flex justify-content-between align-items-center">
-                          <div class="quantity-control">
-                            <button 
-                              class="btn btn-sm btn-outline-secondary" 
-                              @click="decreaseQuantity"
-                              :disabled="itemQuantity <= 1"
-                            >
-                              <i class="fas fa-minus"></i>
-                            </button>
-                            <span class="mx-2">{{ itemQuantity }}</span>
-                            <button 
-                              class="btn btn-sm btn-outline-secondary" 
-                              @click="increaseQuantity"
-                            >
-                              <i class="fas fa-plus"></i>
-                            </button>
-                          </div>
-                          <div class="item-price font-weight-bold">
-                            ${{ (Number(selectedMenuItem.price) * itemQuantity).toFixed(2) }}
-                          </div>
+                      <div class="col-md-4">
+                        <div class="form-group mb-3">
+                          <label for="bookingTime" class="form-label">Time</label>
+                          <input
+                            type="time"
+                            class="form-control"
+                            id="bookingTime"
+                            v-model="bookingTime"
+                            required
+                          >
                         </div>
                       </div>
                     </div>
@@ -181,7 +153,7 @@
                       <button 
                         class="btn btn-lg btn-success me-3" 
                         @click="acceptBooking"
-                        :disabled="isAccepting || !partySize"
+                        :disabled="isAccepting || !partySize || !bookingDate || !bookingTime"
                       >
                         <i class="fas fa-check-circle me-2"></i>
                         Accept & Book This Table
@@ -230,7 +202,6 @@
   import { useRouter } from 'vue-router';
   import { getCurrentUser, signOut } from '@/services/supabase';
   import { getRestaurantById } from '@/services/restaurantService';
-  import { getRestaurantMenu } from '@/services/menuService';
   import { acceptReallocation, declineReallocation } from '@/services/reservationService';
   
   export default {
@@ -241,15 +212,13 @@
       const reservation = ref(null);
       const restaurantData = ref(null);
       const restaurantName = ref('');
-      const menuItems = ref([]);
-      const selectedMenuItem = ref(null);
-      const itemQuantity = ref(1);
       const partySize = ref(2); // Default to 2 people
+      const bookingDate = ref('');
+      const bookingTime = ref('');
       const isLoading = ref(true);
       const isAccepting = ref(false);
       const errorMessage = ref('');
       const bookingAccepted = ref(false);
-      const offerExpiryTime = ref('15:00');
       
       // Format date from ISO string
       const formatDate = (isoString) => {
@@ -264,14 +233,6 @@
         const date = new Date(isoString);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       };
-      
-      // Calculate order total if menu item is selected
-      const orderTotal = computed(() => {
-        if (selectedMenuItem.value) {
-          return (Number(selectedMenuItem.value.price) * itemQuantity.value).toFixed(2);
-        }
-        return '0.00';
-      });
       
       // Load data when component mounts
       onMounted(async () => {
@@ -289,13 +250,14 @@
               await loadRestaurantData(reservation.value.restaurant_id);
             }
             
-            // Set expiry time (example: 30 minutes from now)
-            const expiryDate = new Date();
-            expiryDate.setMinutes(expiryDate.getMinutes() + 30);
-            offerExpiryTime.value = expiryDate.toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            });
+            // Set default date and time for booking (today and current time + 1 hour)
+            const now = new Date();
+            bookingDate.value = now.toISOString().split('T')[0];
+            
+            now.setHours(now.getHours() + 1);
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            bookingTime.value = `${hours}:${minutes}`;
           }
         } catch (error) {
           console.error('Error during initialization:', error);
@@ -359,7 +321,7 @@
         }
       };
       
-      // Load restaurant data and menu
+      // Load restaurant data
       const loadRestaurantData = async (restaurantId) => {
         try {
           // Get restaurant details
@@ -369,26 +331,10 @@
           } else {
             restaurantName.value = `Restaurant #${restaurantId}`;
           }
-          
-          // Get menu items
-          const menuData = await getRestaurantMenu(restaurantId);
-          menuItems.value = menuData;
         } catch (error) {
           console.error('Error loading restaurant data:', error);
           // Non-critical error, continue loading page
           restaurantName.value = `Restaurant #${restaurantId}`;
-        }
-      };
-      
-      // Increase item quantity
-      const increaseQuantity = () => {
-        itemQuantity.value++;
-      };
-      
-      // Decrease item quantity
-      const decreaseQuantity = () => {
-        if (itemQuantity.value > 1) {
-          itemQuantity.value--;
         }
       };
       
@@ -406,23 +352,36 @@
             return;
           }
           
+          if (!bookingDate.value || !bookingTime.value) {
+            errorMessage.value = 'Please specify both date and time for your reservation';
+            isAccepting.value = false;
+            return;
+          }
+          
+          // Get user data from session
+          if (!user.value || !user.value.id) {
+            errorMessage.value = 'User information is missing. Please log in again.';
+            isAccepting.value = false;
+            return;
+          }
+          
+          // Prepare date and time for the booking
+          const bookingDateTime = new Date(`${bookingDate.value}T${bookingTime.value}`);
+          
           // Prepare the data for accepting the reservation
           const acceptData = {
             reservation_id: reservation.value.reservation_id,
             user_id: user.value.id,
-            party_size: partySize.value,
-            menu_item: selectedMenuItem.value ? {
-              menu_id: selectedMenuItem.value.menu_id,
-              item_name: selectedMenuItem.value.item_name,
-              price: selectedMenuItem.value.price,
-              quantity: itemQuantity.value
-            } : null
+            username: user.value.customerName,
+            phone_number: user.value.phoneNumber,
+            count: partySize.value,
+            booking_time: bookingDateTime.toISOString()
           };
           
           console.log('Accepting reservation with data:', acceptData);
           
           // Call the API to accept the reservation
-          const result = await acceptReallocation(reservation.value.reservation_id, acceptData);
+          const result = await acceptReallocation(acceptData);
           
           // Handle successful acceptance
           bookingAccepted.value = true;
@@ -462,98 +421,76 @@
           isLoading.value = false;
         }
       };
-        // Logout function
-        const logout = async () => {
-            try {
-                isLoading.value = true;
-                await signOut();
-                
-                // Clear any stored user data
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('user_name');
-                localStorage.removeItem('user_phone');
-                localStorage.removeItem('pendingReservation');
-                
-                router.push('/');
-            } catch (error) {
-                console.error('Logout error:', error);
-                errorMessage.value = 'Failed to log out. Please try again.';
-            } finally {
-                isLoading.value = false;
-            }
-            };
-            
-            return {
-            user,
-            reservation,
-            restaurantName,
-            menuItems,
-            selectedMenuItem,
-            itemQuantity,
-            partySize,
-            isLoading,
-            isAccepting,
-            errorMessage,
-            bookingAccepted,
-            offerExpiryTime,
-            orderTotal,
-            formatDate,
-            formatTime,
-            increaseQuantity,
-            decreaseQuantity,
-            acceptBooking,
-            declineBooking,
-            logout
-            };
+      
+      // Logout function
+      const logout = async () => {
+        try {
+          isLoading.value = true;
+          await signOut();
+          
+          // Clear any stored user data
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('user_name');
+          localStorage.removeItem('user_phone');
+          localStorage.removeItem('pendingReservation');
+          
+          router.push('/');
+        } catch (error) {
+          console.error('Logout error:', error);
+          errorMessage.value = 'Failed to log out. Please try again.';
+        } finally {
+          isLoading.value = false;
         }
-        };
-        </script>
+      };
+      
+      return {
+        user,
+        reservation,
+        restaurantName,
+        partySize,
+        bookingDate,
+        bookingTime,
+        isLoading,
+        isAccepting,
+        errorMessage,
+        bookingAccepted,
+        formatDate,
+        formatTime,
+        acceptBooking,
+        declineBooking,
+        logout
+      };
+    }
+  };
+  </script>
 
-    <style scoped>
-        .detail-item {
-        margin-bottom: 15px;
-        }
+  <style scoped>
+    .detail-item {
+      margin-bottom: 15px;
+    }
 
-        .detail-label {
-        display: block;
-        font-weight: 600;
-        color: #6c757d;
-        font-size: 0.9rem;
-        }
+    .detail-label {
+      display: block;
+      font-weight: 600;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
 
-        .detail-value {
-        font-size: 1.1rem;
-        color: var(--dark-color);
-        }
+    .detail-value {
+      font-size: 1.1rem;
+      color: var(--dark-color);
+    }
 
-        .status-badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
 
-        .status-pending {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-        }
-
-        .selected-menu-item {
-        background-color: rgba(240, 90, 40, 0.05);
-        }
-
-        .quantity-control {
-        display: flex;
-        align-items: center;
-        }
-
-        .quantity-control .btn {
-        width: 30px;
-        height: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        }
-    </style>
+    .status-pending {
+      background-color: rgba(255, 193, 7, 0.1);
+      color: #ffc107;
+    }
+  </style>

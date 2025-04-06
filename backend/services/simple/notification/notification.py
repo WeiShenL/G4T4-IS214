@@ -55,7 +55,7 @@ MESSAGE_TEMPLATES = {
     "reservation.cancellation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been canceled and a refund of ${refund_amount} has been processed. We look forward to seeing you again! Thank you!",
     "order.confirmation": "Your order has been confirmed. Thank you for dining with us!",
     "reservation.confirmation": "Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
-    "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please tap on the SMS to start the booking process...",
+    "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process...",
     "reallocation.confirmation": "Hi {username}, Table {table_no} booking has been confirmed. Thank you!",
     "delivery.pickup": "egfzgzdg" #to be edited by dom
 }

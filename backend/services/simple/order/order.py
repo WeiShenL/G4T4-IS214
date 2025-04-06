@@ -63,7 +63,7 @@ def create_order():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# get all orders for a specific user (not used for now) --> order history page? idk
+# get all orders for a specific user 
 @app.route("/api/orders/user/<string:user_id>", methods=['GET'])
 def get_user_orders(user_id):
     try:
