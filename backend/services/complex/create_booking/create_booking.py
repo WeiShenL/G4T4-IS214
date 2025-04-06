@@ -1,13 +1,3 @@
-# when capacity of restaurant is full, then post a request to waitlist msc at outsystems as "user_id"
-# user go thru payment process also, then order row fills up.
-
-
-# create order, row order db 
-
-# aft create order, if (count how many reservations based on that res ID)
-# more than capacity instead submit user_id to the waitlist instead of creating reservation
-
-
 import sys
 import os
 
@@ -20,6 +10,7 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pika
+from datetime import datetime
 
 from backend.rabbitmq.amqp_lib import connect, is_connection_open
 from backend.rabbitmq.amqp_setup import (
@@ -93,7 +84,7 @@ def publish_message(routing_key, message):
 @app.route('/create', methods=['POST'])
 def create_booking():
     try:
-        # Get request data (TODO: receives json string from the UI?)
+        # Get request data
         data = request.json
         
         # Validate required fields for the combined order and reservation
@@ -106,7 +97,7 @@ def create_booking():
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
         
-        # first create the order
+        # First create the order with order_type as "dine_in(pending)"
         order_data = {
             "user_id": data['user_id'],
             "restaurant_id": data['restaurant_id'],
@@ -114,7 +105,7 @@ def create_booking():
             "quantity": data['quantity'],
             "order_price": data['order_price'],
             "payment_id": data['payment_id'],
-            "order_type": data.get('order_type', 'dine_in')
+            "order_type": "dine_in(pending)"  # Initially set as pending
         }
         
         # Call order service to create the order
@@ -138,8 +129,104 @@ def create_booking():
         order_id = order_data.get("data", {}).get("order_id")
         if not order_id:
             return jsonify({"error": "Order ID not found in response"}), 500
+            
+        # Get restaurant capacity and current reservations
+        restaurant_id = data['restaurant_id']
+        print(f"Checking capacity for restaurant {restaurant_id}")
+        capacity_response = requests.get(
+            f"http://localhost:5002/api/restaurants/capacity/{restaurant_id}"
+        )
         
-        # create the reservation with the order_id
+        if not capacity_response.ok:
+            error_data = capacity_response.json()
+            return jsonify({
+                "error": f"Failed to check restaurant capacity: {error_data.get('message', capacity_response.status_code)}"
+            }), capacity_response.status_code
+            
+        capacity_data = capacity_response.json()
+        restaurant_capacity = capacity_data.get("data", {}).get("capacity", 0)
+        current_reservations = capacity_data.get("data", {}).get("current_reservations", 0)
+        available_slots = capacity_data.get("data", {}).get("available_slots", 0)
+        
+        print(f"Restaurant capacity: {restaurant_capacity}, Current reservations: {current_reservations}")
+        
+        # Get user details for notifications
+        user_id = data.get("user_id")
+        try:
+            user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            
+            # Extract the user details we need
+            user_name = user_data.get("data", {}).get("customer_name", "Customer")
+            user_phone = user_data.get("data", {}).get("phone_number", "")
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch user details: {str(e)}")
+            user_name = "Customer"
+            user_phone = ""
+            
+        # Get restaurant details
+        try:
+            restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
+            restaurant_response.raise_for_status()
+            restaurant_data = restaurant_response.json()
+            
+            # Extract restaurant name
+            restaurant_name = restaurant_data.get("data", {}).get("name", f"Restaurant #{restaurant_id}")
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch restaurant details: {str(e)}")
+            restaurant_name = f"Restaurant #{restaurant_id}"
+            
+        # Check if restaurant is at capacity
+        if current_reservations >= restaurant_capacity:
+            print(f"Restaurant at capacity. Adding user to waitlist.")
+            
+            # Add user to waitlist via OutSystems API
+            current_time = datetime.now().isoformat()
+            waitlist_data = {
+                "user_id": user_id,
+                "time": current_time
+            }
+            
+            try:
+                waitlist_response = requests.post(
+                    "https://qks.outsystemscloud.com/Waitlist_Service/rest/waitlist/addUser",
+                    json=waitlist_data
+                )
+                
+                # Queue waitlist notification to RabbitMQ
+                notification_data = {
+                    "user_id": user_id,
+                    "user_name": user_name,
+                    "user_phone": user_phone,
+                    "restaurant_id": restaurant_id,
+                    "restaurant_name": restaurant_name,
+                    "time": data.get("time"),
+                    "count": data.get("count"),
+                    "payment_id": data.get("payment_id"),
+                    "order_id": order_id,
+                    "message_type": "waitlist.notification"
+                }
+                
+                publish_message("waitlist.notification", notification_data)
+                
+                # Return response indicating waitlist status
+                return jsonify({
+                    "message": "Restaurant is at capacity. You have been added to the waitlist.",
+                    "status": "waitlisted",
+                    "order_id": order_id,
+                    "data": {
+                        "order": order_data.get("data", {})
+                    }
+                }), 200
+                
+            except Exception as e:
+                print(f"Error adding to waitlist: {str(e)}")
+                return jsonify({
+                    "error": f"Failed to add to waitlist: {str(e)}"
+                }), 500
+        
+        # If we reach here, there's capacity available, create the reservation
         reservation_data = {
             "restaurant_id": data['restaurant_id'],
             "user_id": data['user_id'],
@@ -169,38 +256,19 @@ def create_booking():
         reservation_data = reservation_response.json()
         print(f"Reservation created: {reservation_data}")
         
+        # Update order type to "dine_in"
+        order_update_response = requests.patch(
+            f"http://localhost:5004/api/orders/{order_id}/type",
+            json={"order_type": "dine_in"}
+        )
+        
+        if not order_update_response.ok:
+            print(f"Warning: Failed to update order type: {order_update_response.text}")
+        
         # Get the reservation ID from the response
         reservation_id = reservation_data.get("data", {}).get("reservation_id")
         if not reservation_id:
             return jsonify({"error": "Reservation ID not found in response"}), 500
-        
-        # Get user details from user service
-        user_id = data.get("user_id")
-        try:
-            user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
-            user_response.raise_for_status()
-            user_data = user_response.json()
-            
-            # Extract the user details we need
-            user_name = user_data.get("data", {}).get("customer_name", "Customer")
-            user_phone = user_data.get("data", {}).get("phone_number", "")
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch user details: {str(e)}")
-            user_name = "Customer"
-            user_phone = ""
-        
-        # Get restaurant details
-        restaurant_id = data.get("restaurant_id")
-        try:
-            restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
-            restaurant_response.raise_for_status()
-            restaurant_data = restaurant_response.json()
-            
-            # Extract restaurant name
-            restaurant_name = restaurant_data.get("data", {}).get("name", f"Restaurant #{restaurant_id}")
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch restaurant details: {str(e)}")
-            restaurant_name = f"Restaurant #{restaurant_id}"
         
         # Queue a confirmation message to RabbitMQ
         try:
@@ -211,7 +279,7 @@ def create_booking():
                 "user_phone": user_phone,
                 "restaurant_id": restaurant_id,
                 "restaurant_name": restaurant_name,
-                "table_no": data.get("table_no", "TBD"),
+                "table_no": reservation_data.get("data", {}).get("table_no", "TBD"),
                 "time": data.get("time"),
                 "count": data.get("count"),
                 "payment_id": data.get("payment_id"),
@@ -243,8 +311,7 @@ def create_booking():
             print(f"Error in notification handling: {str(e)}")
             # Return partial success since the booking was created
             return jsonify({
-                "message": "Booking created but notification handling failed.",
-                "error": str(e),
+                "message": "Booking created but notification could not be sent.",
                 "status": "booked",
                 "order_id": order_id,
                 "reservation_id": reservation_id,
@@ -253,10 +320,10 @@ def create_booking():
                     "reservation": reservation_data.get("data", {})
                 }
             }), 207
-            
+    
     except Exception as e:
-        print(f"Error creating booking: {str(e)}")
-        return jsonify({"error": f"Error creating booking: {str(e)}"}), 500
+        print(f"Error in create_booking: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 if __name__ == '__main__':
     print("Starting create_booking service...")
