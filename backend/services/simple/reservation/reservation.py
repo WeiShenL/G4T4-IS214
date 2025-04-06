@@ -8,6 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import random
+import requests
 
 load_dotenv()
 
@@ -205,6 +206,8 @@ def update_reservation(reservation_id):
             update_data["user_id"] = data["user_id"]
         if "status" in data:
             update_data["status"] = data["status"]
+        if "order_id" in data:
+            update_data["order_id"] = data["order_id"]
         
         # If no update data, return error
         if not update_data:
@@ -229,7 +232,8 @@ def update_reservation(reservation_id):
             "reservation_id": reservation_id,
             "user_id": updated_response.data[0].get('user_id'),
             "table_no": updated_response.data[0].get('table_no'),
-            "status": updated_response.data[0].get('status')
+            "status": updated_response.data[0].get('status'),
+            "order_id": updated_response.data[0].get('order_id')
         }), 200
     
     except Exception as e:
@@ -259,6 +263,11 @@ def reallocate_confirm_booking(reservation_id):
             "order_id": data["order_id"],
             "payment_id": data["payment_id"]
         }
+        
+        # Add booking_time to update_data if provided (using 'time' column in database)
+        if "booking_time" in data and data["booking_time"]:
+            update_data["time"] = data["booking_time"]
+            print(f"Updating time field to: {data['booking_time']}")
 
         # Fetch the existing reservation to ensure it exists
         existing_response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
@@ -283,13 +292,48 @@ def reallocate_confirm_booking(reservation_id):
             "count": updated_response.data[0].get("count"),
             "price": updated_response.data[0].get("price"),
             "order_id": updated_response.data[0].get("order_id"),
-            "payment_id": updated_response.data[0].get("payment_id")
+            "payment_id": updated_response.data[0].get("payment_id"),
+            "booking_time": updated_response.data[0].get("time")  
         }), 200
 
     except Exception as e:
         return jsonify({
             "code": 500,
             "error": f"An error occurred: {str(e)}"
+        }), 500
+
+# Get restaurant capacity and count existing reservations
+@app.route("/api/restaurants/capacity/<int:restaurant_id>", methods=['GET'])
+def get_restaurant_capacity(restaurant_id):
+    try:
+        # Get restaurant details including capacity
+        restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
+        if not restaurant_response.ok:
+            return jsonify({
+                "code": restaurant_response.status_code,
+                "message": f"Failed to get restaurant details: {restaurant_response.text}"
+            }), restaurant_response.status_code
+            
+        restaurant_data = restaurant_response.json()
+        restaurant_capacity = restaurant_data.get("data", {}).get("capacity", 0)
+        
+        # Count existing reservations for this restaurant
+        reservation_response = supabase.table('reservation').select('*').eq('restaurant_id', restaurant_id).eq('status', 'Booked').execute()
+        reservation_count = len(reservation_response.data) if reservation_response.data else 0
+        
+        return jsonify({
+            "code": 200,
+            "data": {
+                "restaurant_id": restaurant_id,
+                "capacity": restaurant_capacity,
+                "current_reservations": reservation_count,
+                "available_slots": max(0, restaurant_capacity - reservation_count)
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
         }), 500
 
 if __name__ == '__main__':

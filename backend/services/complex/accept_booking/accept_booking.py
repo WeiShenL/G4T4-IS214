@@ -43,28 +43,45 @@ def connectAMQP():
                     exchange_name=exchange_name,
                     exchange_type=exchange_type,
                 )
-            return
+            return True
         except Exception as e:
             print(f"Attempt {attempt+1}/{max_retries}: Unable to connect to RabbitMQ: {e}")
             if attempt < max_retries - 1:
                 time.sleep(2)
             else:
                 print("Max retries reached, exiting...")
-                sys.exit(1)
+                return False
 
 # Publish message to RabbitMQ
 def publish_message(routing_key, message):
     global connection, channel
-    if connection is None or not is_connection_open(connection):
-        connectAMQP()
     
-    message_json = json.dumps(message)
-    channel.basic_publish(
-        exchange=exchange_name,
-        routing_key=routing_key,
-        body=message_json
-    )
-    print(f"Published message to {routing_key}: {message_json}")
+    # Try up to 3 times to publish the message
+    for attempt in range(3):
+        try:
+            # Check connection and try to reconnect if needed
+            if connection is None or not is_connection_open(connection):
+                connected = connectAMQP()
+                if not connected:
+                    print("  Could not connect to RabbitMQ, will try again...")
+                    time.sleep(1)
+                    continue
+            
+            message_json = json.dumps(message)
+            channel.basic_publish(
+                exchange=exchange_name,
+                routing_key=routing_key,
+                body=message_json
+            )
+            print(f"  Published message to {routing_key}: {message_json}")
+            return True
+        except Exception as e:
+            print(f"  Error publishing message (attempt {attempt+1}/3): {e}")
+            connection = None  # Reset connection to force reconnect
+            time.sleep(1)
+    
+    print("  Failed to publish message after multiple attempts")
+    return False
 
 @app.route('/accept-booking', methods=['POST'])
 def accept_booking():
@@ -108,7 +125,9 @@ def accept_booking():
             # Add booking_time if provided
             if booking_time:
                 update_payload["booking_time"] = booking_time
+                print(f"Including booking_time in update: {booking_time}")
                 
+            # Update the reservation
             update_response = requests.patch(
                 f"http://localhost:5002/reservation/reallocate_confirm_booking/{reservation_id}",
                 json=update_payload
@@ -116,6 +135,11 @@ def accept_booking():
             update_response.raise_for_status()
             updated_data = update_response.json()
             table_no = updated_data.get("table_no")
+            
+            # Use the booking_time from the response if available
+            if updated_data.get("booking_time"):
+                booking_time = updated_data.get("booking_time")
+                print(f"Using booking_time from response: {booking_time}")
 
             if not table_no:
                 return jsonify({"error": "Table number missing in reservation response"}), 500
@@ -149,10 +173,11 @@ def accept_booking():
         try:
             print(f"Queueing notification for user: {username}")
             notification_data = {
-                "username": username,
-                "phone_number": phone_number,
+                "user_name": username,
+                "user_phone": phone_number,
                 "table_no": table_no,
                 "booking_time": booking_time,
+                "reservation_id": new_reservation_id,
                 "message_type": "reallocation.confirmation"
             }
             publish_message("reallocation.confirmation", notification_data)

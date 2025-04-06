@@ -56,8 +56,9 @@ MESSAGE_TEMPLATES = {
     "order.confirmation": "Your order has been confirmed. Thank you for dining with us!",
     "reservation.confirmation": "Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process...",
-    "reallocation.confirmation": "Hi {username}, Table {table_no} booking has been confirmed. Thank you!",
-    "delivery.pickup": "egfzgzdg" #to be edited by dom
+    "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
+    "delivery.pickup": "egfzgzdg", #to be edited by dom
+    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!"
 }
 
 # Sends an SMS via Twilio
@@ -120,6 +121,18 @@ def rabbitmq_callback(ch, method, properties, body):
         username = data.get("user_name", "there")
         reservation_id = data.get("reservation_id", "N/A")
         refund_amount = data.get("refund_amount", "N/A")
+        restaurant_name = data.get("restaurant_name", "The restaurant")
+        booking_time = data.get("booking_time", "N/A")
+        
+        # Format booking_time if available
+        if booking_time != "N/A" and booking_time:
+            try:
+                # Parse ISO date string to datetime
+                booking_dt = datetime.fromisoformat(booking_time.replace('Z', '+00:00'))
+                # Format as a readable date/time
+                booking_time = booking_dt.strftime("%A, %B %d, %Y at %I:%M %p")
+            except Exception as e:
+                logging.warning(f"Could not format booking time: {e}")
 
         if not user_phone or not msg_type:
             logging.warning("Missing required fields in RabbitMQ message")
@@ -131,7 +144,9 @@ def rabbitmq_callback(ch, method, properties, body):
             username=username,
             reservation_id=reservation_id,
             refund_amount=refund_amount,
-            table_no=table_no
+            table_no=table_no,
+            restaurant_name=restaurant_name,
+            booking_time=booking_time
         )
 
         logging.info(f"Processing {msg_type} event...")
@@ -164,6 +179,7 @@ def start_rabbitmq_consumer():
                 "Reservation_Cancellation": "reservation.cancellation",
                 "Reallocation_Notice": "reallocation.notice",
                 "Reallocation_Confirmation": "reallocation.confirmation",
+                "Waitlist_Notification": "waitlist.notification",
             }
 
             for queue_name, routing_key in queues.items():

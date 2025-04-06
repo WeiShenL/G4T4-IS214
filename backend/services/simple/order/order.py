@@ -117,6 +117,43 @@ def delete_order_by_id(order_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
+# Update order type
+@app.route("/api/orders/<int:order_id>/type", methods=['PATCH'])
+def update_order_type(order_id):
+    try:
+        data = request.json
+        
+        if 'order_type' not in data:
+            return jsonify({
+                "code": 400,
+                "message": "Missing required field: order_type"
+            }), 400
+            
+        # Update the order with the given order_id
+        update_data = {
+            "order_type": data['order_type']
+        }
+        
+        update_response = supabase.table('orders').update(update_data).eq('order_id', order_id).execute()
+        
+        if update_response.data:
+            return jsonify({
+                "code": 200,
+                "message": f"Order with ID {order_id} updated successfully",
+                "data": update_response.data[0]
+            })
+        else:
+            return jsonify({
+                "code": 404,
+                "message": f"No order found with ID: {order_id}"
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     print(f"Starting order service on port 5004")
     app.run(host='0.0.0.0', port=5004, debug=True)

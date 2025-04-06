@@ -133,10 +133,39 @@ def reallocate_reservation():
         # Update the reservation with the new user ID
         try:
             print(f"Updating reservation {reservation_id} with new user ID: {user_id}")
+            
+            # Get the most recent order for this user
+            try:
+                print(f"Getting orders for user ID: {user_id}")
+                orders_response = requests.get(f"http://localhost:5004/api/orders/user/{user_id}")
+                orders_response.raise_for_status()
+                orders_data = orders_response.json()
+                
+                if orders_data.get("code") != 200:
+                    print(f"Error getting orders data: {orders_data}")
+                    return jsonify({"error": "Failed to get orders details"}), 500
+                
+                # Get the most recent order (assumed to be first in the list)
+                orders = orders_data.get("data", {}).get("orders", [])
+                if not orders:
+                    print(f"No orders found for user {user_id}")
+                else:
+                    most_recent_order = orders[0]  # API returns orders ordered by created_at desc
+                    order_id = most_recent_order.get("order_id")
+                    print(f"Found order ID: {order_id} for user {user_id}")
+            except requests.exceptions.RequestException as e:
+                print(f"Error calling Orders API: {str(e)}")
+                order_id = None
+            
             reservation_update_data = {
                 "user_id": user_id,
-                "status": "Pending"
+                "status": "Pending",
             }
+            
+            # Include order_id in the update if found
+            if order_id:
+                reservation_update_data["order_id"] = order_id
+            
             reservation_response = requests.patch(
                 f"http://localhost:5002/reservation/reallocate/{reservation_id}", 
                 json=reservation_update_data
