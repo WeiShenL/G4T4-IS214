@@ -134,7 +134,7 @@ def create_booking():
         restaurant_id = data['restaurant_id']
         print(f"Checking capacity for restaurant {restaurant_id}")
         capacity_response = requests.get(
-            f"http://localhost:5002/api/restaurants/capacity/{restaurant_id}"
+            f"http://localhost:5001/api/restaurants/capacity/{restaurant_id}"
         )
         
         if not capacity_response.ok:
@@ -145,10 +145,26 @@ def create_booking():
             
         capacity_data = capacity_response.json()
         restaurant_capacity = capacity_data.get("data", {}).get("capacity", 0)
-        current_reservations = capacity_data.get("data", {}).get("current_reservations", 0)
-        available_slots = capacity_data.get("data", {}).get("available_slots", 0)
         
-        print(f"Restaurant capacity: {restaurant_capacity}, Current reservations: {current_reservations}")
+        # We need to count only dine-in orders against capacity
+        # First, get all orders with order_type = "dine_in" for this restaurant
+        dine_in_orders_response = requests.get(
+            f"http://localhost:5004/api/orders/restaurant/{restaurant_id}/type/dine_in"
+        )
+        
+        dine_in_count = 0
+        if dine_in_orders_response.ok:
+            orders_data = dine_in_orders_response.json()
+            dine_in_orders = orders_data.get("data", {}).get("orders", [])
+            dine_in_count = len(dine_in_orders)
+        else:
+            print(f"Warning: Failed to retrieve dine-in orders: {dine_in_orders_response.text}")
+        
+        # Use dine_in_count instead of current_reservations
+        current_reservations = dine_in_count
+        available_slots = max(0, restaurant_capacity - current_reservations)
+        
+        print(f"Restaurant capacity: {restaurant_capacity}, Current dine-in reservations: {current_reservations}")
         
         # Get user details for notifications
         user_id = data.get("user_id")

@@ -114,6 +114,41 @@ def get_restaurants_by_availability(availability):
             "code": 500,
             "message": f"An error occurred: {str(e)}"
         }), 500
+
+# Get restaurant capacity and count existing dine-in reservations
+@app.route("/api/restaurants/capacity/<int:restaurant_id>", methods=['GET'])
+def get_restaurant_capacity(restaurant_id):
+    try:
+        # Get restaurant details including capacity
+        response = supabase.table('restaurant').select('*').eq('restaurant_id', restaurant_id).execute()
+        restaurant = response.data[0] if response.data else None
+        
+        if not restaurant:
+            return jsonify({
+                "code": 404,
+                "message": "Restaurant not found."
+            }), 404
+            
+        restaurant_capacity = restaurant.get("capacity", 0)
+        
+        # Count existing reservations for this restaurant that have status 'Booked'
+        reservation_response = supabase.table('reservation').select('*').eq('restaurant_id', restaurant_id).eq('status', 'Booked').execute()
+        reservation_count = len(reservation_response.data) if reservation_response.data else 0
+        
+        return jsonify({
+            "code": 200,
+            "data": {
+                "restaurant_id": restaurant_id,
+                "capacity": restaurant_capacity,
+                "current_reservations": reservation_count,
+                "available_slots": max(0, restaurant_capacity - reservation_count)
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
         
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

@@ -147,6 +147,25 @@ def accept_booking():
             print(f"Error updating reservation: {str(e)}")
             return jsonify({"error": f"Failed to update reservation: {str(e)}"}), 500
 
+        # Step 2.5: Update Order Type from "dinein(pending)" to "dinein"
+        try:
+            if order_id:
+                print(f"Updating order type for order ID: {order_id}")
+                order_update_payload = {
+                    "order_type": "dinein"
+                }
+                order_update_response = requests.patch(
+                    f"http://localhost:5004/api/orders/{order_id}/type",
+                    json=order_update_payload
+                )
+                order_update_response.raise_for_status()
+                print(f"Order type updated successfully for order ID: {order_id}")
+            else:
+                print("No order_id provided, skipping order type update")
+        except requests.exceptions.RequestException as e:
+            print(f"Error updating order type: {str(e)}")
+            return jsonify({"error": f"Failed to update order type: {str(e)}"}), 500
+
         # Step 3: Get user details - either from the request data or fetch from User Service
         username = data.get("username")
         phone_number = data.get("phone_number")

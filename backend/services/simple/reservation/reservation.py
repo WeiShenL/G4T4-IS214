@@ -302,39 +302,5 @@ def reallocate_confirm_booking(reservation_id):
             "error": f"An error occurred: {str(e)}"
         }), 500
 
-# Get restaurant capacity and count existing reservations
-@app.route("/api/restaurants/capacity/<int:restaurant_id>", methods=['GET'])
-def get_restaurant_capacity(restaurant_id):
-    try:
-        # Get restaurant details including capacity
-        restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
-        if not restaurant_response.ok:
-            return jsonify({
-                "code": restaurant_response.status_code,
-                "message": f"Failed to get restaurant details: {restaurant_response.text}"
-            }), restaurant_response.status_code
-            
-        restaurant_data = restaurant_response.json()
-        restaurant_capacity = restaurant_data.get("data", {}).get("capacity", 0)
-        
-        # Count existing reservations for this restaurant
-        reservation_response = supabase.table('reservation').select('*').eq('restaurant_id', restaurant_id).eq('status', 'Booked').execute()
-        reservation_count = len(reservation_response.data) if reservation_response.data else 0
-        
-        return jsonify({
-            "code": 200,
-            "data": {
-                "restaurant_id": restaurant_id,
-                "capacity": restaurant_capacity,
-                "current_reservations": reservation_count,
-                "available_slots": max(0, restaurant_capacity - reservation_count)
-            }
-        })
-    except Exception as e:
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)

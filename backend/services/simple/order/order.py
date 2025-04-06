@@ -154,6 +154,37 @@ def update_order_type(order_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
+# Get orders by restaurant ID and order type
+@app.route("/api/orders/restaurant/<int:restaurant_id>/type/<string:order_type>", methods=['GET'])
+def get_restaurant_orders_by_type(restaurant_id, order_type):
+    try:
+        # Query orders with matching restaurant_id and order_type
+        response = supabase.table('orders').select('*')\
+            .eq('restaurant_id', restaurant_id)\
+            .eq('order_type', order_type)\
+            .execute()
+            
+        orders = response.data
+        
+        if orders:
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "orders": orders
+                }
+            })
+        return jsonify({
+            "code": 200,
+            "data": {
+                "orders": []
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     print(f"Starting order service on port 5004")
     app.run(host='0.0.0.0', port=5004, debug=True)
