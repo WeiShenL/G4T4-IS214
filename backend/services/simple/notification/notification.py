@@ -56,7 +56,11 @@ MESSAGE_TEMPLATES = {
     "order.confirmation": "Your order has been confirmed. Thank you for dining with us!",
     "reservation.confirmation": "Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please tap on the SMS to start the booking process...",
-    "reallocation.confirmation": "Table {table_no} booking has been confirmed. Thank you!"
+    "reallocation.confirmation": "Table {table_no} booking has been confirmed. Thank you!",
+
+    "order.accepted": "Your order (ID: {order_id}) has been assigned a driver. Thank you for dining with us!",
+    "order.pickedup": "Your order (ID: {order_id}) has been picked up by driver, your allocated driver. Driver is on the way!",
+    "order.delivered": "Your order (ID: {order_id}) has been delivered. Thank you for your purchase!",
 }
 
 # Sends an SMS via Twilio
@@ -163,6 +167,10 @@ def start_rabbitmq_consumer():
                 "Reservation_Cancellation": "reservation.cancellation",
                 "Reallocation_Notice": "reallocation.notice",
                 "Reallocation_Confirmation": "reallocation.confirmation",
+
+                "Order_Accepted" : "order.accepted",
+                "Order_Pickedup" : "order.pickedup",
+                "Order_Delivered" : "order.delivered"
             }
 
             for queue_name, routing_key in queues.items():

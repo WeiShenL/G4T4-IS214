@@ -253,6 +253,61 @@ def verify_payment(session_id):
             "code": 500,
             "message": f"An error occurred: {str(e)}"
         }), 500
+    
+
+# Fetch orders by order_type
+@app.route("/api/orders/type/<string:order_type>", methods=['GET'])
+def get_orders_by_type(order_type):
+    try:
+        # Query orders with the specified order_type
+        response = supabase.table('orders').select('*').eq('order_type', order_type).execute()
+        orders = response.data
+        
+        if orders:
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "orders": orders
+                }
+            })
+        return jsonify({
+            "code": 404,
+            "message": f"No orders found with type: {order_type}"
+        }), 404
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+    
+# get specific order id
+@app.route("/api/orders/<int:order_id>", methods=['GET'])
+def get_order_by_id(order_id):
+    """
+    Retrieve a specific order by its order_id.
+    """
+    try:
+        # Query the database for the specific order
+        response = supabase.table('orders').select('*').eq('order_id', str(order_id)).execute()
+        order = response.data
+
+        if order:
+            return jsonify({
+                "code": 200,
+                "data": order[0]
+            })
+        else:
+            return jsonify({
+                "code": 404,
+                "message": f"Order with ID {order_id} not found."
+            }), 404
+
+    except Exception as e:
+        print(f"Error fetching order: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred while fetching the order: {str(e)}"
+        }), 500
 
 if __name__ == '__main__':
     print(f"Starting order service on port 5004")
