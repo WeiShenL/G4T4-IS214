@@ -1,9 +1,6 @@
-<<<<<<< Updated upstream
 #TODO: remove reallocation patch method
 #TODO: count total reservations for that particular restaurant
 
-=======
->>>>>>> Stashed changes
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -144,14 +141,8 @@ def get_user_reservations(user_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-<<<<<<< Updated upstream
 @app.route('/api/reservation/cancel/<int:reservation_id>', methods=['PATCH'])
 def cancel_reservation(reservation_id):
-=======
-# Delete reservation row when cancellation
-@app.route('/api/reservation/cancel/<int:reservation_id>', methods=['DELETE'])
-def delete_reservation(reservation_id):
->>>>>>> Stashed changes
     try:
         # Fetch the existing reservation
         response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
@@ -201,15 +192,55 @@ def delete_reservation(reservation_id):
             "error": f"An error occurred: {str(e)}"
         }), 500
 
-<<<<<<< Updated upstream
-# ks method
+# TODO: can be removed; just run create reservation instead of this  
 @app.route('/reservation/reallocate/<int:reservation_id>', methods=['PATCH'])
 def update_reservation(reservation_id):
-=======
+    try:
+        # Get the request data
+        data = request.get_json()
+        
+        # Validate input
+        update_data = {}
+        if "user_id" in data:
+            update_data["user_id"] = data["user_id"]
+        if "status" in data:
+            update_data["status"] = data["status"]
+        
+        # If no update data, return error
+        if not update_data:
+            return jsonify({"error": "No update data provided"}), 400
+        
+        # Fetch the existing reservation to ensure it exists
+        existing_response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
+        
+        if not existing_response.data:
+            return jsonify({"error": "Reservation not found"}), 404
+        
+        # Perform the update
+        update_response = supabase.table('reservation').update(update_data).eq('reservation_id', reservation_id).execute()
+        
+        if not update_response.data:
+            return jsonify({"error": "Failed to update reservation"}), 500
+        
+        # Fetch the updated reservation to return
+        updated_response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
+        
+        return jsonify({
+            "reservation_id": reservation_id,
+            "user_id": updated_response.data[0].get('user_id'),
+            "table_no": updated_response.data[0].get('table_no'),
+            "status": updated_response.data[0].get('status')
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred: {str(e)}"
+        }), 500
+
 # Confirm booking (new route for accept_booking.py)
 @app.route('/reservation/reallocate_confirm_booking/<int:reservation_id>', methods=['PATCH'])
 def reallocate_confirm_booking(reservation_id):
->>>>>>> Stashed changes
     try:
         data = request.get_json()
 
