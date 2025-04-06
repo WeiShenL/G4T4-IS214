@@ -90,18 +90,6 @@ create_queue(
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
-    queue_name="Order_Accepted",
-    routing_key="order.accepted",
-)
-create_queue(
-    channel=channel,
-    exchange_name=exchange_name,
-    queue_name="Order_Pickedup",
-    routing_key="order.pickedup",
-)
-create_queue(
-    channel=channel,
-    exchange_name=exchange_name,
-    queue_name="Order_Delivered",
-    routing_key="order.delivered",
+    queue_name="Waitlist_Notification",
+    routing_key="waitlist.notification",
 )

@@ -3,9 +3,8 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import stripe
-import json
-from supabase import create_client, Client
 from datetime import datetime
+from supabase import create_client, Client
 
 load_dotenv()
 
@@ -13,89 +12,18 @@ app = Flask(__name__)
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# supabase api
-supabase_url = os.getenv('SUPABASE_URL')
-supabase_key = os.getenv('SUPABASE_KEY')
-supabase: Client = create_client(supabase_url, supabase_key)
-
 # stripe api
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 print(f"Stripe API configured with key: {stripe.api_key[:5]}...")
 webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 print(f"Webhook secret configured: {webhook_secret[:5]}...")
 
-# create a new order with Stripe payment ID
-@app.route("/api/orders", methods=['POST'])
-def create_order():
-    try:
-        data = request.json
-        required_fields = ['user_id', 'restaurant_id', 'item_name', 'quantity', 'order_price', 'payment_id']
-        
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    "code": 400,
-                    "message": f"Missing required field: {field}"
-                }), 400
-        
-        # Insert order into the database
-        new_order = {
-            "user_id": data['user_id'],
-            "restaurant_id": data['restaurant_id'],
-            "item_name": data['item_name'],
-            "quantity": data['quantity'],
-            "order_price": data['order_price'],
-            "payment_id": data['payment_id'],
-            "created_at": datetime.now().isoformat(),
-            "order_type": data.get('order_type') 
-        }
-        
-        response = supabase.table('orders').insert(new_order).execute()
-        
-        if response.data:
-            return jsonify({
-                "code": 201,
-                "message": "Order created successfully",
-                "data": response.data[0]
-            }), 201
-        else:
-            return jsonify({
-                "code": 500,
-                "message": "Failed to create order"
-            }), 500
-    
-    except Exception as e:
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
+supabase_url = os.getenv('SUPABASE_URL')
+supabase_key = os.getenv('SUPABASE_KEY')
+supabase: Client = create_client(supabase_url, supabase_key)
 
-# get all orders for a specific user (not used for now) --> order history page? idk
-@app.route("/api/orders/user/<string:user_id>", methods=['GET'])
-def get_user_orders(user_id):
-    try:
-        response = supabase.table('orders').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
-        orders = response.data
-        
-        if orders:
-            return jsonify({
-                "code": 200,
-                "data": {
-                    "orders": orders
-                }
-            })
-        return jsonify({
-            "code": 404,
-            "message": f"No orders found for user: {user_id}"
-        }), 404
-    except Exception as e:
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
-
-# STRIPE INTEGRATION - Process a refund
-@app.route("/api/stripe/refund", methods=['POST'])
+# Process a refund
+@app.route("/api/payment/refund", methods=['POST'])
 def process_refund():
     try:
         data = request.json
@@ -123,18 +51,6 @@ def process_refund():
         
         print(f"Refund processed: {refund.id}")
         
-         # refund is successful, delete the associated order
-        try:
-            # delete the order with the given payment_id
-            delete_response = supabase.table('orders').delete().eq('payment_id', payment_id).execute()
-            
-            if delete_response.data:
-                print(f"Order with payment_id {payment_id} deleted successfully")
-            else:
-                print(f"No order found with payment_id: {payment_id}")
-        except Exception as delete_error:
-            print(f"Error deleting order: {str(delete_error)}")
-        
         return jsonify({
             "code": 200,
             "refund": {
@@ -151,8 +67,8 @@ def process_refund():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# STRIPE INTEGRATION - Create a checkout session
-@app.route("/api/stripe/create-checkout-session", methods=['POST'])
+# Create a checkout session
+@app.route("/api/payment/create-checkout-session", methods=['POST'])
 def create_checkout_session():
     try:
         data = request.json
@@ -217,8 +133,8 @@ def create_checkout_session():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# STRIPE INTEGRATION - Verify payment
-@app.route("/api/stripe/verify-payment/<string:session_id>", methods=['GET'])
+# Verify payment and update payment db for logging purposes
+@app.route("/api/payment/verify-payment/<string:session_id>", methods=['GET'])
 def verify_payment(session_id):
     try:
         print(f"Verifying payment for session: {session_id}")
@@ -235,6 +151,19 @@ def verify_payment(session_id):
         
         # Get the payment intent
         payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
+        
+        # Store payment record in the database
+        payment_record = {
+            "stripe_payment_id": payment_intent.id,
+            "amount": payment_intent.amount / 100,  # Convert cents to dollars
+            "status": payment_intent.status
+        }
+        
+        # Insert payment record into the database
+        response = supabase.table('payments').insert(payment_record).execute()
+        
+        if not response.data:
+            print(f"Warning: Failed to save payment record to database")
         
         print(f"Payment verified: {payment_intent.id} with status {payment_intent.status}")
         
@@ -310,5 +239,5 @@ def get_order_by_id(order_id):
         }), 500
 
 if __name__ == '__main__':
-    print(f"Starting order service on port 5004")
-    app.run(host='0.0.0.0', port=5004, debug=True)
+    print(f"Starting payment service on port 5008")
+    app.run(host='0.0.0.0', port=5008, debug=True)
