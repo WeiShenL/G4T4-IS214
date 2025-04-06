@@ -57,8 +57,11 @@ MESSAGE_TEMPLATES = {
     "reservation.confirmation": "Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process...",
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
-    "delivery.pickup": "egfzgzdg", #to be edited by dom
-    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!"
+    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
+
+    "order.accepted": "Your order (ID: {order_id}) has been assigned a driver. Thank you for dining with us!",
+    "order.pickedup": "Your order (ID: {order_id}) has been picked up by driver, your allocated driver. Driver is on the way!",
+    "order.delivered": "Your order (ID: {order_id}) has been delivered. Thank you for your purchase!",
 }
 
 # Sends an SMS via Twilio
