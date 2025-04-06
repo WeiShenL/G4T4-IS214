@@ -60,10 +60,6 @@ def get_restaurant(restaurant_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# create restaurant code ( i left out)
-
-
-
 # filter restaurants by cuisine
 @app.route("/api/restaurants/cuisine/<string:cuisine>", methods=['GET'])
 def get_restaurants_by_cuisine(cuisine):

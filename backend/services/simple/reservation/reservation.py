@@ -1,6 +1,3 @@
-#TODO: remove reallocation patch method
-#TODO: count total reservations for that particular restaurant
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -19,7 +16,7 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# Retrieve all reservations (not in use?)
+# Retrieve all reservations
 @app.route("/api/reservations", methods=['GET'])
 def get_all_reservations():
     try:
@@ -158,7 +155,7 @@ def cancel_reservation(reservation_id):
         table_no = reservation.get('table_no')
         user_id = reservation.get('user_id')
         payment_id = reservation.get('payment_id')
-        order_id = reservation.get('order_id')  # Make sure to include order_id
+        order_id = reservation.get('order_id')
 
         
         # Prepare update data to clear the reservation
@@ -192,8 +189,7 @@ def cancel_reservation(reservation_id):
         return jsonify({
             "error": f"An error occurred: {str(e)}"
         }), 500
-
-# TODO: can be removed; just run create reservation instead of this  
+ 
 @app.route('/reservation/reallocate/<int:reservation_id>', methods=['PATCH'])
 def update_reservation(reservation_id):
     try:
@@ -264,7 +260,6 @@ def reallocate_confirm_booking(reservation_id):
             "payment_id": data["payment_id"]
         }
         
-        # Add booking_time to update_data if provided (using 'time' column in database)
         if "booking_time" in data and data["booking_time"]:
             update_data["time"] = data["booking_time"]
             print(f"Updating time field to: {data['booking_time']}")

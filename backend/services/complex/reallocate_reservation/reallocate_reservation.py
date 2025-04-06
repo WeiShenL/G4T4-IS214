@@ -106,7 +106,7 @@ def reallocate_reservation():
             print(f"Error calling OutSystems Waitlist API: {str(e)}")
             return jsonify({"error": f"Failed to get waitlist user: {str(e)}"}), 500
 
-        # Get user details from user service
+        # Get user details from user service by submitting user_id
         try:
             print(f"Getting user details for user ID: {user_id}")
             user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
@@ -130,7 +130,7 @@ def reallocate_reservation():
             print(f"Error calling User API: {str(e)}")
             return jsonify({"error": f"Failed to get user details: {str(e)}"}), 500
 
-        # Update the reservation with the new user ID
+        # Update/assign the reservation table with the new user ID
         try:
             print(f"Updating reservation {reservation_id} with new user ID: {user_id}")
             

@@ -14,7 +14,7 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# Get user by ID
+# Get user details by user_id
 @app.route("/api/user/<string:user_id>", methods=['GET'])
 def get_user(user_id):
     try:

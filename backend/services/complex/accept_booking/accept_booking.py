@@ -107,10 +107,10 @@ def accept_booking():
                     missing_fields.append(field)
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
-        # Step 1: Generate a new reservation ID if needed
+        # Generate a new reservation ID if needed
         new_reservation_id = data.get("new_reservation_id", random.randrange(200, 999))
 
-        # Step 2: Update Reservation Details via Reservation Service
+        # Update Reservation Details via Reservation Service
         try:
             print(f"Updating reservation details for reservation ID: {reservation_id}")
             update_payload = {
@@ -127,7 +127,7 @@ def accept_booking():
                 update_payload["booking_time"] = booking_time
                 print(f"Including booking_time in update: {booking_time}")
                 
-            # Update the reservation
+            # Update the reservation by calling ghe reservation.py service
             update_response = requests.patch(
                 f"http://localhost:5002/reservation/reallocate_confirm_booking/{reservation_id}",
                 json=update_payload
@@ -147,12 +147,12 @@ def accept_booking():
             print(f"Error updating reservation: {str(e)}")
             return jsonify({"error": f"Failed to update reservation: {str(e)}"}), 500
 
-        # Step 2.5: Update Order Type from "dinein(pending)" to "dinein"
+        # Update Order Type from "dine_in(pending)" to "dine_in"
         try:
             if order_id:
                 print(f"Updating order type for order ID: {order_id}")
                 order_update_payload = {
-                    "order_type": "dinein"
+                    "order_type": "dine_in"
                 }
                 order_update_response = requests.patch(
                     f"http://localhost:5004/api/orders/{order_id}/type",
@@ -166,7 +166,7 @@ def accept_booking():
             print(f"Error updating order type: {str(e)}")
             return jsonify({"error": f"Failed to update order type: {str(e)}"}), 500
 
-        # Step 3: Get user details - either from the request data or fetch from User Service
+        # Get user details from User Service
         username = data.get("username")
         phone_number = data.get("phone_number")
         
@@ -188,7 +188,7 @@ def accept_booking():
                 print(f"Error fetching user details: {str(e)}")
                 return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
-        # Step 4: Queue Notification Message to RabbitMQ
+        # Queue Notification Message to RabbitMQ
         try:
             print(f"Queueing notification for user: {username}")
             notification_data = {

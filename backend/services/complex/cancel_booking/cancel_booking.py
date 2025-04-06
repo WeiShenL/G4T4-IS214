@@ -1,5 +1,3 @@
-# delete the reservation data row instead of editing the fields.
-
 import sys
 import os
 
@@ -101,7 +99,7 @@ def process_cancellation(reservation_id):
     table_no = reservation_data.get("table_no")
     refund_amount = reservation_data.get("refund_amount")
     payment_id = reservation_data.get("payment_id")
-    order_id = reservation_data.get("order_id")  # Get order_id if available
+    order_id = reservation_data.get("order_id")  
 
     if not user_id:
         return jsonify({"error": "No user associated with this reservation"}), 404
