@@ -120,6 +120,7 @@ export default {
     const user = ref(null);
     const isLoading = ref(true);
     const errorMessage = ref('');
+    const deliveryData = ref(null);
 
      // Map variables
     const isFetching   = ref(false);
@@ -127,6 +128,7 @@ export default {
     const infoWindow   = ref(null);
     const mapContainer = ref(null);
     const markers = ref([]);
+
     
     
     const driverStats = [
@@ -178,6 +180,9 @@ export default {
         
         const data = await response.json();
         console.log('👉 JSON payload:', data);
+
+        // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
+        deliveryData.value = data;
         
         // Clear existing markers
         markers.value.forEach(marker => marker.setMap(null));
@@ -201,19 +206,36 @@ export default {
             title: restaurant.name
           });
           
-          // Create info window content
-          const content = `
-            <div class="info-window">
-              <h4>${restaurant.name}</h4>
-              <p>${restaurant.location}</p>
-              <ul>
-                ${restaurant.orders.map(order => 
-                  `<li>${order.item_name} (Order #${order.order_id})<br>
-                   To: ${order.customer.name} (${order.customer.location})</li>`
-                ).join('')}
-              </ul>
-            </div>
-          `;
+          // Create info window content with select buttons (NEWWWWWWWWWWWWWWW)
+          const content = document.createElement('div');
+          content.className = 'info-window';
+          
+          const title = document.createElement('h4');
+          title.textContent = restaurant.name;
+          content.appendChild(title);
+          
+          const address = document.createElement('p');
+          address.textContent = restaurant.location;
+          content.appendChild(address);
+          
+          const ordersList = document.createElement('ul');
+          restaurant.orders.forEach(order => {
+            const item = document.createElement('li');
+            
+            const orderInfo = document.createElement('div');
+            orderInfo.innerHTML = `${order.item_name} (Order #${order.order_id})<br>
+                                  To: ${order.customer.name} (${order.customer.location})`;
+            item.appendChild(orderInfo);
+            
+            const selectBtn = document.createElement('button');
+            selectBtn.className = 'btn btn-sm btn-primary mt-2';
+            selectBtn.textContent = 'Select';
+            selectBtn.onclick = () => selectOrder(order.order_id); // Just pass order ID
+            item.appendChild(selectBtn);
+            
+            ordersList.appendChild(item);
+          });
+          content.appendChild(ordersList);
           
           marker.addListener('click', () => {
             infoWindow.value.setContent(content);
@@ -234,6 +256,44 @@ export default {
       } finally {
         isFetching.value = false;
       }
+    };
+
+    // Add a method to handle order selection (NEWWWWWWWWWWWWWWWWWWWWWW)
+    const selectOrder = (orderId) => {
+      console.log(`Order ${orderId} selected`);
+      
+      // Find the order across all restaurants
+      let selectedOrder = null;
+      let selectedRestaurant = null;
+      
+      for (const restaurant of deliveryData.value?.data.restaurants || []) {
+        const order = restaurant.orders.find(order => order.order_id === orderId);
+        if (order) {
+          selectedOrder = order;
+          selectedRestaurant = restaurant;
+          break;
+        }
+      }
+      
+      if (!selectedOrder || !selectedRestaurant) {
+        console.error('Could not find selected order');
+        return;
+      }
+      
+      // Store selected data in localStorage before navigating
+      const routingData = {
+        driver: deliveryData.value.data.driver,
+        restaurant: selectedRestaurant,
+        order: selectedOrder
+      };
+      
+      localStorage.setItem('routingData', JSON.stringify(routingData));
+      
+      // Navigate to routing page with just the order ID
+      router.push({
+        path: '/routing',
+        query: { order_id: orderId }
+      });
     };
 
     
@@ -355,6 +415,9 @@ export default {
       isFetching,
       mapContainer,
       fetchDeliveryData,
+
+      deliveryData,
+      selectOrder,
     };
 
 

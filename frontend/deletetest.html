@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Live Location</title>
+</head>
+<body>
+  <h1>Testing Live Location Updates</h1>
+  <p>Open the browser console to see logs.</p>
+
+  <script>
+    // Function to get the user's live location
+    function getLiveLocation() {
+      if (!navigator.geolocation) {
+        console.error("Geolocation is not supported by your browser.");
+        return;
+      }
+
+      // Fetch location with high accuracy and set timeout and maximumAge for better precision
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const accuracy = position.coords.accuracy;  // Fetch the accuracy in meters
+          
+          console.log(`Fetched location: Latitude=${latitude}, Longitude=${longitude}`);
+          console.log(`Accuracy: ${accuracy} meters`);
+
+          // If accuracy is above a threshold, try again (optional)
+          if (accuracy > 20) {
+            console.log("Accuracy is poor, trying again...");
+            setTimeout(getLiveLocation, 1000);  // Retry after 1 second if accuracy is poor
+          }
+        },
+        (error) => {
+          console.error("Error fetching location:", error.message);
+        },
+        {
+          enableHighAccuracy: true,  // Ensures higher accuracy
+          timeout: 5000,  // Set a shorter timeout for better responsiveness
+          maximumAge: 0,  // Ensure we always get fresh data, no caching
+        }
+      );
+    }
+
+    // Start fetching location once the page loads
+    getLiveLocation();
+
+    // Optionally, fetch location every 10 seconds for continuous updates
+    setInterval(getLiveLocation, 10000); // Update every 10 seconds
+  </script>
+</body>
+</html>
