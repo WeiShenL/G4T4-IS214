@@ -1,5 +1,3 @@
-# delete the reservation data row instead of editing the fields.
-
 import sys
 import os
 
@@ -41,35 +39,52 @@ def connectAMQP():
                     exchange_name=exchange_name,
                     exchange_type=exchange_type,
                 )
-            return
+            return True
         except Exception as e:
             print(f"  Attempt {attempt+1}/{max_retries}: Unable to connect to RabbitMQ: {e}")
             if attempt < max_retries - 1:
                 time.sleep(2)
             else:
-                print("  Max retries reached, exiting...")
-                exit(1)
+                print("  Max retries reached, continuing operation...")
+                return False
 
 # Publish message to RabbitMQ
 def publish_message(routing_key, message):
     global connection, channel
-    if connection is None or not is_connection_open(connection):
-        connectAMQP()
     
-    message_json = json.dumps(message)
-    channel.basic_publish(
-        exchange=exchange_name,
-        routing_key=routing_key,
-        body=message_json
-    )
-    print(f"  Published message to {routing_key}: {message_json}")
+    # Try up to 3 times to publish the message
+    for attempt in range(3):
+        try:
+            # Check connection and try to reconnect if needed
+            if connection is None or not is_connection_open(connection):
+                connected = connectAMQP()
+                if not connected:
+                    print("  Could not connect to RabbitMQ, will try again...")
+                    time.sleep(1)
+                    continue
+            
+            message_json = json.dumps(message)
+            channel.basic_publish(
+                exchange=exchange_name,
+                routing_key=routing_key,
+                body=message_json
+            )
+            print(f"  Published message to {routing_key}: {message_json}")
+            return True
+        except Exception as e:
+            print(f"  Error publishing message (attempt {attempt+1}/3): {e}")
+            connection = None  # Reset connection to force reconnect
+            time.sleep(1)
+    
+    print("  Failed to publish message after multiple attempts")
+    return False
 
 @app.route('/cancel/<int:reservation_id>', methods=['POST'])
 def process_cancellation(reservation_id):
     # Call reservation.py to cancel the reservation
     try:
         # Use the reservation API endpoint in your application
-        reservation_response = requests.delete(
+        reservation_response = requests.patch(
             f"http://localhost:5002/api/reservation/cancel/{reservation_id}"
         )
         reservation_response.raise_for_status()
@@ -84,7 +99,7 @@ def process_cancellation(reservation_id):
     table_no = reservation_data.get("table_no")
     refund_amount = reservation_data.get("refund_amount")
     payment_id = reservation_data.get("payment_id")
-    order_id = reservation_data.get("order_id")  # Get order_id if available
+    order_id = reservation_data.get("order_id")  
 
     if not user_id:
         return jsonify({"error": "No user associated with this reservation"}), 404
