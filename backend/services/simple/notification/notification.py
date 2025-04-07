@@ -56,8 +56,11 @@ MESSAGE_TEMPLATES = {
     "reservation.confirmation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process...",
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
-    "delivery.pickup": "egfzgzdg", #to be edited by dom
-    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!"
+    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
+
+    "order.accepted": "Hi there {customer_name}! Your order (ID: {order_id}) has been assigned a driver, {driver_name}. Thank you for dining with us!",
+    "order.pickedup": "Good news {customer_name}! Your order (ID: {order_id}) has been picked up by your allocated driver. {driver_name} is on the way!",
+    "order.delivered": "Hello {customer_name}! Your order (ID: {order_id}) has been delivered. Thank you for your purchase and we hope to see you soon!"
 }
 
 # Sends an SMS via Twilio
@@ -123,6 +126,9 @@ def rabbitmq_callback(ch, method, properties, body):
         restaurant_name = data.get("restaurant_name", "The restaurant")
         booking_time = data.get("booking_time", "N/A"),
         order_id= data.get("order_id", "N/A")
+
+        driver_name = data.get("driver_name", "Driver") 
+        customer_name = data.get("customer_name", "Customer") 
         
         # Format booking_time if available
         if booking_time != "N/A" and booking_time:
@@ -146,7 +152,10 @@ def rabbitmq_callback(ch, method, properties, body):
             refund_amount=refund_amount,
             table_no=table_no,
             restaurant_name=restaurant_name,
-            booking_time=booking_time
+            booking_time=booking_time,
+
+            driver_name=driver_name,  
+            customer_name=customer_name,  
         )
 
         logging.info(f"Processing {msg_type} event...")
@@ -180,6 +189,9 @@ def start_rabbitmq_consumer():
                 "Reallocation_Notice": "reallocation.notice",
                 "Reallocation_Confirmation": "reallocation.confirmation",
                 "Waitlist_Notification": "waitlist.notification",
+                "Order_Accepted" : "order.accepted",
+                "Order_Pickedup" : "order.pickedup",
+                "Order_Delivered" : "order.delivered"
             }
 
             for queue_name, routing_key in queues.items():

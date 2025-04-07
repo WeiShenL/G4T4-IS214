@@ -70,11 +70,21 @@
             </div>
           </div>
           
+          
           <!-- New Delivery Requests -->
           <div class="row mb-4">
-            <div class="col-12">
+            <div class="col-12 d-flex justify-content-between align-items-center">
               <h3 class="section-heading">New Delivery Requests</h3>
+              <button 
+                class="btn btn-primary" 
+                @click="fetchDeliveryData"
+                :disabled="isFetching"
+              >
+                <span v-if="!isFetching">Check for Deliveries</span>
+                <span v-else class="spinner-border spinner-border-sm" role="status"></span>
+              </button>
             </div>
+            <!-- <!empty state--  --> 
             <div class="col-12">
               <div class="empty-state">
                 <i class="fas fa-route"></i>
@@ -84,19 +94,14 @@
             </div>
           </div>
           
-          <!-- Active Deliveries -->
+          <!-- Map Section -->
           <div class="row mb-4">
             <div class="col-12">
-              <h3 class="section-heading">Active Deliveries</h3>
-            </div>
-            <div class="col-12">
-              <div class="empty-state">
-                <i class="fas fa-motorcycle"></i>
-                <p>No active deliveries.</p>
-                <small>Active deliveries will be shown here.</small>
-              </div>
+              <h3 class="section-heading">Active Deliveries Map</h3>
+              <div class="map-container" ref="mapContainer"></div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -115,6 +120,16 @@ export default {
     const user = ref(null);
     const isLoading = ref(true);
     const errorMessage = ref('');
+    const deliveryData = ref(null);
+
+     // Map variables
+    const isFetching   = ref(false);
+    const map          = ref(null);
+    const infoWindow   = ref(null);
+    const mapContainer = ref(null);
+    const markers = ref([]);
+
+    
     
     const driverStats = [
       {
@@ -133,6 +148,155 @@ export default {
         value: 'N/A'
       }
     ];
+
+    const initMap = () => {
+      if (!map.value && mapContainer.value) {
+        map.value = new google.maps.Map(mapContainer.value, {
+          center: { lat: 1.3521, lng: 103.8198 },
+          zoom: 12
+        });
+        infoWindow.value = new google.maps.InfoWindow();
+      }
+    };
+    window.initMap = initMap;
+
+    // fetch
+    const fetchDeliveryData = async () => {
+      isFetching.value = true;
+      try {
+        const driverId = user.value?.id;
+        const url = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
+        console.log('👉 Fetching:', url);
+        
+        const response = await fetch(url);
+        console.log('👉 Status:', response.status, 'OK?', response.ok);
+        
+        // If it’s not a 2xx, throw so you hit your catch:
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('🚨 Non‑2xx response body:', text);
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('👉 JSON payload:', data);
+
+        // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
+        deliveryData.value = data;
+        
+        // Clear existing markers
+        markers.value.forEach(marker => marker.setMap(null));
+        markers.value = [];
+        
+        // Set driver marker
+        const driverCoords = data.data.driver.location.split(',').map(Number);
+        const driverMarker = new google.maps.Marker({
+          position: { lat: driverCoords[0], lng: driverCoords[1] },
+          map: map.value,
+          icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+        });
+        markers.value.push(driverMarker);
+        
+        // Set restaurant markers
+        data.data.restaurants.forEach(restaurant => {
+          const coords = restaurant.coordinates.split(',').map(Number);
+          const marker = new google.maps.Marker({
+            position: { lat: coords[0], lng: coords[1] },
+            map: map.value,
+            title: restaurant.name
+          });
+          
+          // Create info window content with select buttons (NEWWWWWWWWWWWWWWW)
+          const content = document.createElement('div');
+          content.className = 'info-window';
+          
+          const title = document.createElement('h4');
+          title.textContent = restaurant.name;
+          content.appendChild(title);
+          
+          const address = document.createElement('p');
+          address.textContent = restaurant.location;
+          content.appendChild(address);
+          
+          const ordersList = document.createElement('ul');
+          restaurant.orders.forEach(order => {
+            const item = document.createElement('li');
+            
+            const orderInfo = document.createElement('div');
+            orderInfo.innerHTML = `${order.item_name} (Order #${order.order_id})<br>
+                                  To: ${order.customer.name} (${order.customer.location})`;
+            item.appendChild(orderInfo);
+            
+            const selectBtn = document.createElement('button');
+            selectBtn.className = 'btn btn-sm btn-primary mt-2';
+            selectBtn.textContent = 'Select';
+            selectBtn.onclick = () => selectOrder(order.order_id); // Just pass order ID
+            item.appendChild(selectBtn);
+            
+            ordersList.appendChild(item);
+          });
+          content.appendChild(ordersList);
+          
+          marker.addListener('click', () => {
+            infoWindow.value.setContent(content);
+            infoWindow.value.open(map.value, marker);
+          });
+          
+          markers.value.push(marker);
+        });
+        
+        // Adjust map bounds
+        const bounds = new google.maps.LatLngBounds();
+        markers.value.forEach(marker => bounds.extend(marker.getPosition()));
+        map.value.fitBounds(bounds);
+        
+      } catch (error) {
+        console.error('Error fetching delivery data:', error);
+        errorMessage.value = 'Failed to fetch delivery data';
+      } finally {
+        isFetching.value = false;
+      }
+    };
+
+    // Add a method to handle order selection (NEWWWWWWWWWWWWWWWWWWWWWW)
+    const selectOrder = (orderId) => {
+      console.log(`Order ${orderId} selected`);
+      
+      // Find the order across all restaurants
+      let selectedOrder = null;
+      let selectedRestaurant = null;
+      
+      for (const restaurant of deliveryData.value?.data.restaurants || []) {
+        const order = restaurant.orders.find(order => order.order_id === orderId);
+        if (order) {
+          selectedOrder = order;
+          selectedRestaurant = restaurant;
+          break;
+        }
+      }
+      
+      if (!selectedOrder || !selectedRestaurant) {
+        console.error('Could not find selected order');
+        return;
+      }
+      
+      // Store selected data in localStorage before navigating
+      const routingData = {
+        driver: deliveryData.value.data.driver,
+        restaurant: selectedRestaurant,
+        order: selectedOrder
+      };
+      
+      localStorage.setItem('routingData', JSON.stringify(routingData));
+      
+      // Navigate to routing page with just the order ID
+      router.push({
+        path: '/routing',
+        query: { order_id: orderId }
+      });
+    };
+
+    
     
     // Load user data when component mounts
     onMounted(async () => {
@@ -207,6 +371,13 @@ export default {
       } finally {
         isLoading.value = false;
       }
+
+
+    // Add map initialization
+    const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA_-ROgMNf8_3OYskUQklbbbH4XIl8WaRk&callback=initMap`;
+      script.defer = true;
+      document.head.appendChild(script);
     });
     
     // Logout function
@@ -232,13 +403,55 @@ export default {
       }
     };
     
+    
+    
     return {
       user,
       isLoading,
       errorMessage,
       driverStats,
-      logout
+      logout,
+
+      isFetching,
+      mapContainer,
+      fetchDeliveryData,
+
+      deliveryData,
+      selectOrder,
     };
+
+
+
+
   }
 };
 </script>
+
+
+<style>
+.map-container {
+  height: 500px;
+  margin: 20px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.info-window {
+  max-width: 300px;
+  font-size: 14px;
+}
+
+.info-window h4 {
+  margin: 0 0 10px;
+  color: #2c3e50;
+}
+
+.info-window ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.info-window li {
+  margin: 8px 0;
+}
+</style>

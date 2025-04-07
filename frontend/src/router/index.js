@@ -9,7 +9,8 @@ import DriverDashboard from '@/views/DriverDashboard.vue';
 import Restaurants from '@/views/Restaurants.vue'; 
 import RestaurantMenu from '@/views/RestaurantMenu.vue';
 import Checkout from '@/views/Checkout.vue';
-import AcceptBooking from '@/views/AcceptBooking.vue'; // Import the new component
+import AcceptBooking from '@/views/AcceptBooking.vue'; 
+import RoutingPage from '@/views/RoutingPage.vue';
 
 const routes = [
   {
@@ -68,6 +69,12 @@ const routes = [
     name: 'AcceptBooking',
     component: AcceptBooking,
     meta: { requiresAuth: true, userType: 'customer' }
+  },
+  {
+    path: '/routing',
+    name: 'RoutingPage',
+    component: RoutingPage,
+    meta: { requiresAuth: true, userType: 'driver' }
   }
 ];
 
