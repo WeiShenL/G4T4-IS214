@@ -7,7 +7,14 @@
           <router-link to="/" class="dashboard-logo">
             <span>FeastFinder</span>
           </router-link>
-          <div class="dashboard-user">
+          <div class="dashboard-user d-flex align-items-center">
+            <!-- Notification Bell Icon -->
+            <div class="position-relative me-3" v-if="hasPendingReservation">
+              <router-link to="/accept-booking" class="notification-bell">
+                <i class="fas fa-bell text-warning"></i>
+                <span class="notification-badge"></span>
+              </router-link>
+            </div>
             <div class="dropdown">
               <button class="btn dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-user-circle"></i>
@@ -17,6 +24,8 @@
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><router-link class="dropdown-item" to="/customer-profile"><i class="fas fa-user-cog"></i> My Profile</router-link></li>
                 <li><router-link class="dropdown-item" to="/customer-orders"><i class="fas fa-receipt"></i> My Orders</router-link></li>
+                <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-calendar-check"></i> My Reservations</router-link></li>
+                <li v-if="hasPendingReservation"><router-link class="dropdown-item text-warning" to="/accept-booking"><i class="fas fa-bell"></i> Pending Table Offer</router-link></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" @click.prevent="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
               </ul>
@@ -35,10 +44,16 @@
             <div class="welcome-card">
               <h2>Welcome, <span v-if="user">{{ user.customerName }}</span><span v-else>Customer</span>!</h2>
               <p>What would you like to eat today?</p>
+              <!-- Pending Reservation Alert -->
+              <div v-if="hasPendingReservation" class="alert alert-warning mt-3">
+                <i class="fas fa-bell me-2"></i> You have a pending table offer! 
+                <router-link to="/accept-booking" class="alert-link">View details</router-link>
+              </div>
             </div>
           </div>
         </div>
         
+        <!-- Rest of the component remains the same -->
         <!-- Search Bar -->
         <div class="row mb-4">
           <div class="col-12">
@@ -108,6 +123,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut } from '@/services/supabase';
+import { checkPendingReservations } from '@/services/reservationService';
 
 const setOrderType = async (type) => {
   // Store order_type in localStorage for temporary use
@@ -122,6 +138,7 @@ export default {
     const isLoading = ref(true);
     const errorMessage = ref('');
     const searchQuery = ref('');
+    const hasPendingReservation = ref(false);
     
     const quickActions = [
       {
@@ -130,7 +147,6 @@ export default {
         link: '/restaurants',
         linkText: 'Find Restaurants',
         orderType: () => setOrderType('dine_in')
-
       },
       {
         icon: 'fas fa-list-alt',
@@ -221,7 +237,26 @@ export default {
           id: profileData.id
         };
         
+        // Store user information in localStorage for other components
+        localStorage.setItem('user_id', profileData.id);
+        localStorage.setItem('user_name', profileData.customer_name);
+        localStorage.setItem('user_phone', profileData.phone_number);
+        
         console.log('User data loaded successfully');
+        
+        // Check for pending reservations
+        try {
+          const pendingReservations = await checkPendingReservations(profileData.id);
+          hasPendingReservation.value = pendingReservations.length > 0;
+          
+          if (hasPendingReservation.value) {
+            // Store pending reservation in localStorage for the accept booking page
+            localStorage.setItem('pendingReservation', JSON.stringify(pendingReservations[0]));
+          }
+        } catch (error) {
+          console.error('Error checking pending reservations:', error);
+          // Non-critical error, continue loading dashboard
+        }
       } catch (error) {
         console.error('Error loading user data:', error);
         errorMessage.value = 'Failed to load user data. Please try again.';
@@ -242,6 +277,12 @@ export default {
           throw error;
         }
         
+        // Clear any stored user data
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_phone');
+        localStorage.removeItem('pendingReservation');
+        
         console.log('Logout successful, redirecting to home');
         // Redirect to home page after logout
         router.push('/');
@@ -259,8 +300,29 @@ export default {
       errorMessage,
       searchQuery,
       quickActions,
+      hasPendingReservation,
       logout
     };
   }
 };
 </script>
+
+<style scoped>
+.notification-bell {
+  font-size: 1.5rem;
+  color: #ffc107;
+  display: block;
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #dc3545;
+  display: block;
+}
+</style>

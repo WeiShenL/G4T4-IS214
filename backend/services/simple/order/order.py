@@ -63,7 +63,7 @@ def create_order():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# get all orders for a specific user (not used for now) --> order history page? idk
+# get all orders for a specific user 
 @app.route("/api/orders/user/<string:user_id>", methods=['GET'])
 def get_user_orders(user_id):
     try:
@@ -111,6 +111,74 @@ def delete_order_by_id(order_id):
                 "message": f"No order found with ID: {order_id}"
             }), 404
             
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
+# Update order type
+@app.route("/api/orders/<int:order_id>/type", methods=['PATCH'])
+def update_order_type(order_id):
+    try:
+        data = request.json
+        
+        if 'order_type' not in data:
+            return jsonify({
+                "code": 400,
+                "message": "Missing required field: order_type"
+            }), 400
+            
+        # Update the order with the given order_id
+        update_data = {
+            "order_type": data['order_type']
+        }
+        
+        update_response = supabase.table('orders').update(update_data).eq('order_id', order_id).execute()
+        
+        if update_response.data:
+            return jsonify({
+                "code": 200,
+                "message": f"Order with ID {order_id} updated successfully",
+                "data": update_response.data[0]
+            })
+        else:
+            return jsonify({
+                "code": 404,
+                "message": f"No order found with ID: {order_id}"
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
+# Get orders by restaurant ID and order type
+@app.route("/api/orders/restaurant/<int:restaurant_id>/type/<string:order_type>", methods=['GET'])
+def get_restaurant_orders_by_type(restaurant_id, order_type):
+    try:
+        # Query orders with matching restaurant_id and order_type
+        response = supabase.table('orders').select('*')\
+            .eq('restaurant_id', restaurant_id)\
+            .eq('order_type', order_type)\
+            .execute()
+            
+        orders = response.data
+        
+        if orders:
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "orders": orders
+                }
+            })
+        return jsonify({
+            "code": 200,
+            "data": {
+                "orders": []
+            }
+        })
     except Exception as e:
         return jsonify({
             "code": 500,
