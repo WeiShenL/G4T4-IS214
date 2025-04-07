@@ -87,9 +87,3 @@ create_queue(
     queue_name="Reallocation_Confirmation",
     routing_key="reallocation.confirmation",
 )
-create_queue(
-    channel=channel,
-    exchange_name=exchange_name,
-    queue_name="Waitlist_Notification",
-    routing_key="waitlist.notification",
-)

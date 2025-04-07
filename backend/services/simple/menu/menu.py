@@ -14,7 +14,7 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# retrieve menu items for a specific restaurant
+# retrieve all menu items for a specific restaurant
 @app.route("/api/menu/<int:restaurant_id>", methods=['GET'])
 def get_restaurant_menu(restaurant_id):
     try:
@@ -38,7 +38,7 @@ def get_restaurant_menu(restaurant_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# get a specific menu item by ID
+# get a specific menu item by ID (not in use)
 @app.route("/api/menu/item/<int:menu_id>", methods=['GET'])
 def get_menu_item(menu_id):
     try:

@@ -28,7 +28,7 @@ def process_refund():
     try:
         data = request.json
         payment_id = data.get('payment_id')
-        amount = data.get('amount')  
+        amount = data.get('amount')  # Optional, if not provided will refund full amount
         
         if not payment_id:
             return jsonify({

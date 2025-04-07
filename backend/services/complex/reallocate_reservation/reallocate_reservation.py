@@ -38,45 +38,28 @@ def connectAMQP():
                     exchange_name=exchange_name,
                     exchange_type=exchange_type,
                 )
-            return True
+            return
         except Exception as e:
             print(f"  Attempt {attempt+1}/{max_retries}: Unable to connect to RabbitMQ: {e}")
             if attempt < max_retries - 1:
                 time.sleep(2)
             else:
-                print("  Max retries reached, continuing operation...")
-                return False
+                print("  Max retries reached, exiting...")
+                sys.exit(1)
 
 # Publish message to RabbitMQ
 def publish_message(routing_key, message):
     global connection, channel
+    if connection is None or not is_connection_open(connection):
+        connectAMQP()
     
-    # Try up to 3 times to publish the message
-    for attempt in range(3):
-        try:
-            # Check connection and try to reconnect if needed
-            if connection is None or not is_connection_open(connection):
-                connected = connectAMQP()
-                if not connected:
-                    print("  Could not connect to RabbitMQ, will try again...")
-                    time.sleep(1)
-                    continue
-            
-            message_json = json.dumps(message)
-            channel.basic_publish(
-                exchange=exchange_name,
-                routing_key=routing_key,
-                body=message_json
-            )
-            print(f"  Published message to {routing_key}: {message_json}")
-            return True
-        except Exception as e:
-            print(f"  Error publishing message (attempt {attempt+1}/3): {e}")
-            connection = None  # Reset connection to force reconnect
-            time.sleep(1)
-    
-    print("  Failed to publish message after multiple attempts")
-    return False
+    message_json = json.dumps(message)
+    channel.basic_publish(
+        exchange=exchange_name,
+        routing_key=routing_key,
+        body=message_json
+    )
+    print(f"  Published message to {routing_key}: {message_json}")
 
 @app.route('/reallocate', methods=['POST'])
 def reallocate_reservation():
@@ -106,7 +89,7 @@ def reallocate_reservation():
             print(f"Error calling OutSystems Waitlist API: {str(e)}")
             return jsonify({"error": f"Failed to get waitlist user: {str(e)}"}), 500
 
-        # Get user details from user service by submitting user_id
+        # Get user details from user service
         try:
             print(f"Getting user details for user ID: {user_id}")
             user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
@@ -130,42 +113,13 @@ def reallocate_reservation():
             print(f"Error calling User API: {str(e)}")
             return jsonify({"error": f"Failed to get user details: {str(e)}"}), 500
 
-        # Update/assign the reservation table with the new user ID
+        # Update the reservation with the new user ID
         try:
             print(f"Updating reservation {reservation_id} with new user ID: {user_id}")
-            
-            # Get the most recent order for this user
-            try:
-                print(f"Getting orders for user ID: {user_id}")
-                orders_response = requests.get(f"http://localhost:5004/api/orders/user/{user_id}")
-                orders_response.raise_for_status()
-                orders_data = orders_response.json()
-                
-                if orders_data.get("code") != 200:
-                    print(f"Error getting orders data: {orders_data}")
-                    return jsonify({"error": "Failed to get orders details"}), 500
-                
-                # Get the most recent order (assumed to be first in the list)
-                orders = orders_data.get("data", {}).get("orders", [])
-                if not orders:
-                    print(f"No orders found for user {user_id}")
-                else:
-                    most_recent_order = orders[0]  # API returns orders ordered by created_at desc
-                    order_id = most_recent_order.get("order_id")
-                    print(f"Found order ID: {order_id} for user {user_id}")
-            except requests.exceptions.RequestException as e:
-                print(f"Error calling Orders API: {str(e)}")
-                order_id = None
-            
             reservation_update_data = {
                 "user_id": user_id,
-                "status": "Pending",
+                "status": "Pending"
             }
-            
-            # Include order_id in the update if found
-            if order_id:
-                reservation_update_data["order_id"] = order_id
-            
             reservation_response = requests.patch(
                 f"http://localhost:5002/reservation/reallocate/{reservation_id}", 
                 json=reservation_update_data
@@ -195,19 +149,15 @@ def reallocate_reservation():
             }
             
             # Publish the notification message
-            notification_sent = publish_message("reallocation.notice", notification_data)
+            publish_message("reallocation.notice", notification_data)
             
-            if notification_sent:
-                print("Reallocation notification sent successfully")
-                return jsonify({
-                    "message": "Reallocation successful", 
-                    "status": "pending",
-                    "user_id": user_id,
-                    "table_no": table_no
-                }), 200
-            else:
-                print("Reallocation notification could not be sent")
-                return jsonify({"error": "Failed to send reallocation notification"}), 500
+            print("Reallocation notification sent successfully")
+            return jsonify({
+                "message": "Reallocation successful", 
+                "status": "pending",
+                "user_id": user_id,
+                "table_no": table_no
+            }), 200
         except Exception as e:
             print(f"Error sending notification: {str(e)}")
             return jsonify({"error": f"Failed to send reallocation notification: {str(e)}"}), 500
