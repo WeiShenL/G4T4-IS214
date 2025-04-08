@@ -9,7 +9,7 @@
             </router-link>
             <div class="dashboard-user">
               <div class="dropdown">
-                <button class="btn dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn dropdown-toggle" type="button" id="userDropdown" @click="toggleDropdown">
                   <i class="fas fa-user-circle"></i>
                   <span v-if="user">{{ user.customerName }}</span>
                   <span v-else>Loading...</span>
@@ -306,6 +306,12 @@
         }
       };
       
+      // Simple method to toggle dropdown manually
+      const toggleDropdown = (event) => {
+        const dropdownMenu = event.target.closest('.dropdown').querySelector('.dropdown-menu');
+        dropdownMenu.classList.toggle('show');
+      };
+      
       return {
         user,
         restaurant,
@@ -318,7 +324,8 @@
         increaseQuantity,
         decreaseQuantity,
         proceedToCheckout,
-        logout
+        logout,
+        toggleDropdown
       };
     }
   };

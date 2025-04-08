@@ -22,8 +22,8 @@
                 <span v-else>Loading...</span>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><router-link class="dropdown-item" to="/customer-profile"><i class="fas fa-user-cog"></i> My Profile</router-link></li>
-                <li><router-link class="dropdown-item" to="/customer-orders"><i class="fas fa-receipt"></i> My Orders</router-link></li>
+                <!-- reservation pg-->
+                <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-receipt"></i> My Orders</router-link></li>
                 <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-calendar-check"></i> My Reservations</router-link></li>
                 <li v-if="hasPendingReservation"><router-link class="dropdown-item text-warning" to="/accept-booking"><i class="fas fa-bell"></i> Pending Table Offer</router-link></li>
                 <li><hr class="dropdown-divider"></li>
@@ -52,25 +52,7 @@
             </div>
           </div>
         </div>
-        
-        <!-- Rest of the component remains the same -->
-        <!-- Search Bar -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="search-container">
-              <input 
-                type="text" 
-                v-model="searchQuery" 
-                class="search-input" 
-                placeholder="Search for restaurants or cuisine..."
-              >
-              <button class="search-btn">
-                <i class="fas fa-search"></i> Search
-              </button>
-            </div>
-          </div>
-        </div>
-        
+                
         <!-- Quick Actions -->
         <div class="row mb-4">
           <div class="col-12">

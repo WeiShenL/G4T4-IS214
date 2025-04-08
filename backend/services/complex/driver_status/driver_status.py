@@ -132,9 +132,9 @@ def accept_order():
             "driver_id": driver_id,
             "driver_name": driver_name,
             "customer_name": customer_name,
-            "message_type": "order.accepted",
+            "message_type": "delivery.order.accepted",
         }
-        publish_message("order.accepted", message)
+        publish_message("delivery.order.accepted", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order accepted successfully."}), 200
@@ -189,9 +189,9 @@ def pick_up_order():
             "driver_id": driver_id,
             "driver_name": driver_name,
             "customer_name": customer_name,
-            "message_type": "order.pickedup",
+            "message_type": "delivery.order.pickedup",
         }
-        publish_message("order.pickedup", message)
+        publish_message("delivery.order.pickedup", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order pickedup successfully."}), 200
@@ -255,9 +255,9 @@ def deliver_order():
             "driver_id": driver_id,
             "driver_name": driver_name,
             "customer_name": customer_name,
-            "message_type": "order.delivered",
+            "message_type": "delivery.order.delivered",
         }
-        publish_message("order.delivered", message)
+        publish_message("delivery.order.delivered", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order delivered successfully."}), 200

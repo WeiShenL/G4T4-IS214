@@ -176,10 +176,10 @@ def create_booking():
                     "restaurant_id": restaurant_id,
                     "restaurant_name": restaurant_name,
                     "payment_id": data.get("payment_id"),
-                    "message_type": "delivery.confirmation"
+                    "message_type": "delivery.order.confirmation"
                 }
                 
-                notification_sent = publish_message("delivery.confirmation", notification_data)
+                notification_sent = publish_message("delivery.order.confirmation", notification_data)
                 
                 status_message = "Delivery order created and confirmation notification sent."
                 status_code = 201
@@ -210,7 +210,7 @@ def create_booking():
                     }
                 }), 207
         
-        # If we're here, it's a dine-in order
+        # here, means is a dine-in order alr
         # Get restaurant capacity and current reservations
         restaurant_id = data['restaurant_id']
         print(f"Checking capacity for restaurant {restaurant_id}")
