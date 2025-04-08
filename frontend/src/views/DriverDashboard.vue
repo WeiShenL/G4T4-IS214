@@ -112,6 +112,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut } from '@/services/supabase';
+import { loadGoogleMapsApi } from '@/services/googleMapsLoader';
 
 export default {
   name: 'DriverDashboard',
@@ -148,15 +149,20 @@ export default {
         value: 'N/A'
       }
     ];
-
+      // is this location hard coded here?
     const initMap = () => {
       if (!map.value && mapContainer.value) {
-        map.value = new google.maps.Map(mapContainer.value, {
-          center: { lat: 1.3521, lng: 103.8198 },
-          zoom: 12
-        });
-        infoWindow.value = new google.maps.InfoWindow();
-      }
+        try {
+          map.value = new google.maps.Map(mapContainer.value, {
+            center: { lat: 1.3521, lng: 103.8198 },
+            zoom: 12
+          });
+          infoWindow.value = new google.maps.InfoWindow();
+          console.log('Map initialized successfully');
+        } catch (error) {
+          console.error('Error initializing map:', error);
+        }
+      } 
     };
     window.initMap = initMap;
 
@@ -372,12 +378,24 @@ export default {
         isLoading.value = false;
       }
 
-
-    // Add map initialization
-    const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA_-ROgMNf8_3OYskUQklbbbH4XIl8WaRk&callback=initMap`;
-      script.defer = true;
-      document.head.appendChild(script);
+      // Load Google Maps and initialize map
+      console.log('Loading Google Maps API from onMounted');
+      loadGoogleMapsApi(() => {
+        // Ensure we have a mapContainer reference before trying to initialize the map
+        if (mapContainer.value) {
+          initMap();
+        } else {
+          console.warn('Map container not available yet, will initialize later');
+          // Try again after a short delay to allow the DOM to render
+          setTimeout(() => {
+            if (mapContainer.value) {
+              initMap();
+            } else {
+              console.error('Map container still not available after delay');
+            }
+          }, 500);
+        }
+      });
     });
     
     // Logout function

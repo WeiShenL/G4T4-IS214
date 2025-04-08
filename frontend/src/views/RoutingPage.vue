@@ -146,6 +146,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { loadGoogleMapsApi } from '@/services/googleMapsLoader';
 
 export default {
   name: 'RoutingPage',
@@ -176,7 +177,10 @@ export default {
 
     // ACCEPT
     const initRoutingAndTrigger = () => {
-      if (!routingData.value) return;
+      if (!routingData.value) {
+        console.error('No routing data available');
+        return;
+      }
 
       const restaurantCoords = routingData.value.restaurant.coordinates;
       const driverId = routingData.value.driver.id;
@@ -193,52 +197,71 @@ export default {
               lng: position.coords.longitude,
             };
 
-            const map = new google.maps.Map(document.getElementById('map-container'), {
-              zoom: 14,
-              center: driverCoords,
-            });
+            // Use the loadGoogleMapsApi function to ensure the API is loaded
+            console.log('Loading Google Maps API for restaurant routing');
+            loadGoogleMapsApi(() => {
+              console.log('Google Maps API loaded, initializing map to restaurant');
+              try {
+                const mapElement = document.getElementById('map-container');
+                if (!mapElement) {
+                  console.error('Map container element not found');
+                  return;
+                }
 
-            const directionsService = new google.maps.DirectionsService();
-            const directionsRenderer = new google.maps.DirectionsRenderer();
-            directionsRenderer.setMap(map);
+                const map = new google.maps.Map(mapElement, {
+                  zoom: 14,
+                  center: driverCoords,
+                });
 
-            const routeRequest = {
-              origin: driverCoords,
-              destination,
-              travelMode: 'DRIVING',
-            };
+                const directionsService = new google.maps.DirectionsService();
+                const directionsRenderer = new google.maps.DirectionsRenderer();
+                directionsRenderer.setMap(map);
 
-            directionsService.route(routeRequest, (result, status) => {
-              if (status === 'OK') {
-                directionsRenderer.setDirections(result);
-              } else {
-                alert('Routing failed: ' + status);
+                const routeRequest = {
+                  origin: driverCoords,
+                  destination,
+                  travelMode: 'DRIVING',
+                };
+
+                directionsService.route(routeRequest, (result, status) => {
+                  if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    console.log('Directions rendered successfully');
+                  } else {
+                    console.error('Routing failed:', status);
+                    alert('Routing failed: ' + status);
+                  }
+                });
+              } catch (error) {
+                console.error('Error initializing map:', error);
               }
-            });
 
-            // Trigger API
-            fetch('http://localhost:5101/accept-order', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                driver_id: driverId,
-                order_id: orderId,
-              }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                console.log('Driver status updated:', data);
+              // Trigger API
+              fetch('http://localhost:5101/accept-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  driver_id: driverId,
+                  order_id: orderId,
+                }),
               })
-              .catch((err) => {
-                console.error('Failed to update driver status:', err);
-              });
+                .then((res) => res.json())
+                .then((data) => {
+                  console.log('Driver status updated:', data);
+                })
+                .catch((err) => {
+                  console.error('Failed to update driver status:', err);
+                });
+            });
           },
-          () => {
+          (positionError) => {
+            console.error('Location access denied:', positionError);
             alert('Location access denied.');
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       } else {
+        console.error('Geolocation not supported by browser');
         alert('Geolocation not supported.');
       }
     };
@@ -246,7 +269,10 @@ export default {
     // picked up order
     const pickUpOrder = () => {
       pickedUp.value = true; // Update state to trigger UI update
-      if (!routingData.value) return;
+      if (!routingData.value) {
+        console.error('No routing data available for pickup');
+        return;
+      }
 
       const driverId = routingData.value.driver.id;
 
@@ -261,26 +287,43 @@ export default {
             const customerCoords = routingData.value.order.customer.coordinates.split(',').map(Number);
             const customerLocation = { lat: customerCoords[0], lng: customerCoords[1] };
 
-            const map = new google.maps.Map(document.getElementById('map-container'), {
-              zoom: 14,
-              center: driverCoords,
-            });
+            // Use the loadGoogleMapsApi function to ensure the API is loaded
+            console.log('Loading Google Maps API for customer routing');
+            loadGoogleMapsApi(() => {
+              console.log('Google Maps API loaded, initializing map to customer');
+              try {
+                const mapElement = document.getElementById('map-container');
+                if (!mapElement) {
+                  console.error('Map container element not found');
+                  return;
+                }
 
-            const directionsService = new google.maps.DirectionsService();
-            const directionsRenderer = new google.maps.DirectionsRenderer();
-            directionsRenderer.setMap(map);
+                const map = new google.maps.Map(mapElement, {
+                  zoom: 14,
+                  center: driverCoords,
+                });
 
-            const routeRequest = {
-              origin: driverCoords,
-              destination: customerLocation,
-              travelMode: 'DRIVING',
-            };
+                const directionsService = new google.maps.DirectionsService();
+                const directionsRenderer = new google.maps.DirectionsRenderer();
+                directionsRenderer.setMap(map);
 
-            directionsService.route(routeRequest, (result, status) => {
-              if (status === 'OK') {
-                directionsRenderer.setDirections(result);
-              } else {
-                alert('Routing failed: ' + status);
+                const routeRequest = {
+                  origin: driverCoords,
+                  destination: customerLocation,
+                  travelMode: 'DRIVING',
+                };
+
+                directionsService.route(routeRequest, (result, status) => {
+                  if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    console.log('Directions to customer rendered successfully');
+                  } else {
+                    console.error('Routing to customer failed:', status);
+                    alert('Routing failed: ' + status);
+                  }
+                });
+              } catch (error) {
+                console.error('Error initializing map to customer:', error);
               }
             });
 
@@ -302,7 +345,8 @@ export default {
                 console.error('Failed to mark order as picked up:', err);
               });
           },
-          () => {
+          (positionError) => {
+            console.error('Location access denied:', positionError);
             alert('Location access denied.');
           },
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -338,40 +382,44 @@ export default {
 
 
     onMounted(() => {
-  // Check if order_id is in the query params and if data exists in localStorage
-  const storedData = localStorage.getItem('routingData');
-  if (storedData) {
-    routingData.value = JSON.parse(storedData);
-    console.log('Loaded routing data:', routingData.value);
-  } else {
-    // Handle case where data is missing or invalid, or you may want to fetch it via an API
-    if (orderId) {
-      // Here you can fetch the data from an API if needed, based on orderId
-      console.log('Fetching data for order_id:', orderId);
-      // Example: Fetch from API or another storage
-      fetch(`/api/routing-data/${orderId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          // remember to chagne backkkkkkkkkkkkkkkkkkk to thissssssssssssssss
-          routingData.value = data;
-          localStorage.setItem('routingData', JSON.stringify(data)); 
-          // use static for now
-          // routingData.value = staticData;
-          // console.log('Loaded static routing data:', routingData.value);
+      // Initial Google Maps API load
+      console.log('Loading Google Maps API on RoutingPage mount');
+      loadGoogleMapsApi();
+      
+      // Check if order_id is in the query params and if data exists in localStorage
+      const storedData = localStorage.getItem('routingData');
+      if (storedData) {
+        routingData.value = JSON.parse(storedData);
+        console.log('Loaded routing data:', routingData.value);
+      } else {
+        // Handle case where data is missing or invalid, or you may want to fetch it via an API
+        if (orderId) {
+          // Here you can fetch the data from an API if needed, based on orderId
+          console.log('Fetching data for order_id:', orderId);
+          // Example: Fetch from API or another storage
+          fetch(`/api/routing-data/${orderId}`)
+            .then((res) => res.json())
+            .then((data) => {
+              // remember to chagne backkkkkkkkkkkkkkkkkkk to thissssssssssssssss
+              routingData.value = data;
+              localStorage.setItem('routingData', JSON.stringify(data)); 
+              // use static for now
+              // routingData.value = staticData;
+              // console.log('Loaded static routing data:', routingData.value);
 
-          // Optionally store the static data in localStorage
-          // localStorage.setItem('routingData', JSON.stringify(staticData));
-        })
-        .catch((err) => {
-          errorMessage.value = 'Error fetching routing data.';
-          console.error('Error:', err);
-        });
-    } else {
-      errorMessage.value = 'Missing routing data. Please return to dashboard.';
-      console.error('Missing routing data');
-    }
-  }
-});
+              // Optionally store the static data in localStorage
+              // localStorage.setItem('routingData', JSON.stringify(staticData));
+            })
+            .catch((err) => {
+              errorMessage.value = 'Error fetching routing data.';
+              console.error('Error:', err);
+            });
+        } else {
+          errorMessage.value = 'Missing routing data. Please return to dashboard.';
+          console.error('Missing routing data');
+        }
+      }
+    });
 
 
     return {
