@@ -26,10 +26,10 @@ def get_driver_details_by_id(driver_id):
     If no record exists, create one with default values.
     """
     try:
-        # Step 1: Convert driver_id to string (required for Supabase queries)
+        # Convert driver_id to string (required for Supabase queries)
         driver_id_str = str(driver_id)
 
-        # Step 2: Check if the driver exists in the database
+        # Check if the driver exists in the database
         response = supabase.table("driverdetails").select("*").eq("driver_id", driver_id_str).execute()
         driver_detail = response.data
 
@@ -42,7 +42,7 @@ def get_driver_details_by_id(driver_id):
                 }
             )
 
-        # Step 3: Create a new record if the driver doesn't exist
+        # Create a new record if the driver doesn't exist
         print(f"No driver found for driver_id: {driver_id}. Creating a new record.")
 
         new_driver_detail = {
@@ -78,15 +78,13 @@ def get_driver_details_by_id(driver_id):
 
 @app.route("/driverdetails/<uuid:driver_id>", methods=['PATCH'])
 def update_driver_availability(driver_id):
-    """
-    Update driver availability for a specific driver_id.
-    No pre-check for driver existence is performed.
-    """
+    #Update driver availability for a specific driver_id.
+    #No pre-check for driver existence is performed.
     try:
-        # Step 1: Convert driver_id to string (required for Supabase queries)
+        # Convert driver_id to string (required for Supabase queries)
         driver_id_str = str(driver_id)
 
-        # Step 2: Parse the request body
+        # Parse the request body
         data = request.json
         availability = data.get("availability")
 
@@ -98,10 +96,10 @@ def update_driver_availability(driver_id):
                 }
             ), 400
 
-        # Step 3: Attempt to update the driver's availability
+        # Attempt to update the driver's availability
         update_response = supabase.table("driverdetails").update({"availability": availability}).eq("driver_id", driver_id_str).execute()
 
-        # Step 4: Check if the update was successful
+        # Check if the update was successful
         if not update_response.data:
             return jsonify(
                 {
@@ -110,7 +108,7 @@ def update_driver_availability(driver_id):
                 }
             ), 404
 
-        # Step 5: Return success response
+        # Return success response
         return jsonify(
             {
                 "code": 200,

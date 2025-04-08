@@ -18,11 +18,9 @@ DRIVERDETAIL_SERVICE_URL = os.getenv('DRIVERDETAIL_SERVICE_URL', 'http://localho
 GEOCODING_SERVICE_URL = os.getenv('GEOCODING_SERVICE_URL', 'http://localhost:7000')
 
 def get_driver_address(driver_id):
-    """
-    Fetch the driver's address from the DRIVER_SERVICE_URL.
-    :param driver_id: The ID of the driver.
-    :return: The driver's address (string) or None if not found.
-    """
+    #Fetch the driver's address from the DRIVER_SERVICE_URL.
+    #:param driver_id: The ID of the driver.
+    #:return: The driver's address (string) or None if not found.
     try:
         driver_response = requests.get(f"{os.getenv('DRIVER_SERVICE_URL', 'http://localhost:5011')}/driver/{driver_id}")
         if driver_response.status_code == 200:
@@ -44,13 +42,13 @@ def get_delivery_management_data():
         if not driver_id:
             return jsonify({"code": 400, "message": "Missing driver_id."}), 400
 
-        # Step 1: Fetch the logged-in driver's details
+        # Fetch the logged-in driver's details
         driver_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
         if driver_response.status_code != 200:
             return jsonify({"code": 404, "message": "Driver not found."}), 404
         driver_data = driver_response.json().get("data", {})
 
-        # Step 2: Fetch all delivery orders (regardless of driver assignment)
+        # Fetch all delivery orders (regardless of driver assignment)
         order_response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/type/delivery")
         if order_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch delivery orders."}), 500
@@ -58,7 +56,7 @@ def get_delivery_management_data():
         if not delivery_orders:
             return jsonify({"code": 404, "message": "No delivery orders found."}), 404
 
-        # Step 3: Group orders by restaurant
+        # Group orders by restaurant
         restaurants = {}  # Key: restaurant_id, Value: {restaurant details + orders}
 
         for order in delivery_orders:
@@ -100,7 +98,7 @@ def get_delivery_management_data():
         # Convert restaurants dictionary to list
         restaurant_list = list(restaurants.values())
 
-        # Step 4: Fetch detailed driver details from the driverdetails service
+        # Fetch detailed driver details from the driverdetails service
         detailed_driver_response = requests.get(f"{DRIVERDETAIL_SERVICE_URL}/driverdetails/{driver_id}")
         if detailed_driver_response.status_code == 404:  # Driver details not found, create a new record
             print(f"No driver details found for driver_id: {driver_id}. Creating a new record.")
@@ -141,7 +139,7 @@ def get_delivery_management_data():
             "availability": detailed_driver_data.get("availability", True)  # From driverdetails service
         }
 
-        # Step 4.5: If live_location is None, fetch the driver's address as fallback
+        # If live_location is None, fetch the driver's address as fallback
         if not driver_details["location"]:
             driver_address = get_driver_address(driver_id)
             if driver_address:
@@ -153,7 +151,7 @@ def get_delivery_management_data():
         
 
 
-         # Step 5: Call the geocoding service to filter nearby restaurants
+         # Call the geocoding service to filter nearby restaurants
         geo_payload = {
             "data": {
                 "driver": driver_details,

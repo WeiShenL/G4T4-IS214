@@ -21,11 +21,10 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Geocoding function
 def geocode_address(address):
-    """
-    Converts an address into a coordinate string "(latitude,longitude)" using OpenStreetMap Nominatim API.
-    :param address: The address to geocode (e.g., "123 Test St").
-    :return: A string in the format "(latitude,longitude)", or None if geocoding fails.
-    """
+    
+    #Converts an address into a coordinate string "(latitude,longitude)" using OpenStreetMap Nominatim API.
+    #:param address: The address to geocode (e.g., "123 Test St").
+    #:return: A string in the format "(latitude,longitude)", or None if geocoding fails.
     try:
         print(f"Geocoding address: {address}")
         url = "https://nominatim.openstreetmap.org/search"
@@ -54,10 +53,8 @@ def geocode_address(address):
         return None
     
 def calculate_distance(lat1, lon1, lat2, lon2):
-    """
-    Calculate the distance between two GPS coordinates using the Haversine formula.
-    Returns the distance in kilometers.
-    """
+    #Calculate the distance between two GPS coordinates using the Haversine formula.
+    #Returns the distance in kilometers.
     R = 6371.0  # Earth radius in kilometers
     lat1, lon1, lat2, lon2 = map(radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
     dlat = lat2 - lat1
@@ -68,11 +65,10 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 @app.route("/nearby-restaurants", methods=['POST'])
 def find_nearby_restaurants():
-    """
-    Find restaurants within a specified radius of the driver's location.
-    Return detailed information about nearby restaurants and orders, including coordinates for all entities.
-    Store results in Supabase for nearby restaurants and orders (avoiding duplicates based on order_id).
-    """
+    
+    #Find restaurants within a specified radius of the driver's location.
+    #Return detailed information about nearby restaurants and orders, including coordinates for all entities.
+    #Store results in Supabase for nearby restaurants and orders (avoiding duplicates based on order_id).
     try:
         # Parse the request data
         request_data = request.get_json()
