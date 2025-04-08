@@ -84,12 +84,34 @@
                 <span v-else class="spinner-border spinner-border-sm" role="status"></span>
               </button>
             </div>
-            <!-- <!empty state--  --> 
-            <div class="col-12">
+            <!-- Empty state shown when no delivery data or no restaurants with orders -->
+            <div v-if="!deliveryData || !deliveryData.data || !deliveryData.data.restaurants || deliveryData.data.restaurants.length === 0" class="col-12">
               <div class="empty-state">
                 <i class="fas fa-route"></i>
                 <p>No new delivery requests at the moment.</p>
                 <small>New requests will appear here when available.</small>
+              </div>
+            </div>
+            <!-- Delivery requests list -->
+            <div v-else class="col-12 mt-3">
+              <div class="delivery-requests-container">
+                <div v-for="restaurant in deliveryData.data.restaurants" :key="restaurant.id" class="restaurant-section mb-4">
+                  <h4>{{ restaurant.name }}</h4>
+                  <p class="restaurant-address"><i class="fas fa-map-marker-alt"></i> {{ restaurant.location }}</p>
+                  <div class="order-cards">
+                    <div v-for="order in restaurant.orders" :key="order.order_id" class="order-card">
+                      <div class="order-details">
+                        <h5>Order #{{ order.order_id }}</h5>
+                        <p><strong>Item:</strong> {{ order.item_name }}</p>
+                        <p><strong>Customer:</strong> {{ order.customer.name }}</p>
+                        <p><strong>Delivery to:</strong> {{ order.customer.location }}</p>
+                      </div>
+                      <button class="btn btn-primary" @click="focusOnRestaurant(order.order_id)">
+                        Show on Map
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -177,7 +199,7 @@ export default {
         const response = await fetch(url);
         console.log('👉 Status:', response.status, 'OK?', response.ok);
         
-        // If it’s not a 2xx, throw so you hit your catch:
+        // If it's not a 2xx, throw so you hit your catch:
         if (!response.ok) {
           const text = await response.text();
           console.error('🚨 Non‑2xx response body:', text);
@@ -300,6 +322,54 @@ export default {
         path: '/routing',
         query: { order_id: orderId }
       });
+    };
+
+    // Function to focus on a restaurant and order on the map
+    const focusOnRestaurant = (orderId) => {
+      console.log(`Focusing on order ${orderId} on map`);
+      
+      // Find the restaurant for this order
+      let targetRestaurant = null;
+      
+      for (const restaurant of deliveryData.value?.data.restaurants || []) {
+        if (restaurant.orders.some(order => order.order_id === orderId)) {
+          targetRestaurant = restaurant;
+          break;
+        }
+      }
+      
+      if (!targetRestaurant) {
+        console.error('Could not find restaurant for order');
+        return;
+      }
+      
+      // Find the corresponding marker
+      const coords = targetRestaurant.coordinates.split(',').map(Number);
+      
+      // Find the marker by position
+      const targetMarker = markers.value.find(marker => {
+        const position = marker.getPosition();
+        return position && 
+               Math.abs(position.lat() - coords[0]) < 0.0001 && 
+               Math.abs(position.lng() - coords[1]) < 0.0001;
+      });
+      
+      if (!targetMarker) {
+        console.error('Could not find marker for restaurant');
+        return;
+      }
+      
+      // Scroll to the map container element
+      if (mapContainer.value) {
+        mapContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Zoom in on the marker
+      map.value.setZoom(16);
+      map.value.panTo(targetMarker.getPosition());
+      
+      // Click the marker to open info window
+      google.maps.event.trigger(targetMarker, 'click');
     };
 
     
@@ -436,6 +506,7 @@ export default {
 
       deliveryData,
       selectOrder,
+      focusOnRestaurant,
     };
 
 
@@ -471,5 +542,54 @@ export default {
 
 .info-window li {
   margin: 8px 0;
+}
+
+/* Delivery Requests Styling */
+.delivery-requests-container {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.restaurant-section {
+  border-bottom: 1px solid #e2e5e8;
+  padding-bottom: 15px;
+}
+
+.restaurant-section:last-child {
+  border-bottom: none;
+}
+
+.restaurant-address {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.order-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.order-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.order-details h5 {
+  color: #343a40;
+  margin-bottom: 10px;
+}
+
+.order-details p {
+  margin-bottom: 5px;
+  font-size: 14px;
 }
 </style>

@@ -124,11 +124,23 @@
               <!-- Completed -->
               <div v-else-if="orderCompleted" class="card">
                 <div class="card-body text-center">
-                  <div class="py-4">
-                    <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
-                    <h3 class="section-heading mt-3">Order Completed!</h3>
-                    <p class="lead">Thank you for delivering with FeastFinder</p>
-                    <button @click="goHome" class="btn btn-primary btn-lg mt-3">
+                  <div class="completion-container py-4">
+                    <div class="check-circle">
+                      <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                    <h3 class="section-heading mt-3 completion-text">Order Completed!</h3>
+                    <p class="lead fade-in-text">Thank you for delivering with FeastFinder</p>
+                    <div class="stats-container">
+                      <div class="stat-item">
+                        <span class="stat-value">+$5.00</span>
+                        <span class="stat-label">Earnings</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">+1</span>
+                        <span class="stat-label">Completed Order</span>
+                      </div>
+                    </div>
+                    <button @click="goHome" class="btn btn-primary btn-lg mt-4 pulse-button">
                       <i class="fas fa-home"></i> Return to Dashboard
                     </button>
                   </div>
@@ -358,6 +370,14 @@ export default {
     const completeOrder = () => {
       orderCompleted.value = true;
 
+      // Launch confetti celebration animation
+      window.confetti({
+        particleCount: 150,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#800080']
+      });
+
       // Call the deliver-order API after completing the order
       fetch('http://localhost:5101/deliver-order', {
         method: 'POST',
@@ -483,5 +503,128 @@ export default {
   align-items: center;
   justify-content: center;
   min-height: 300px;
+}
+
+/* New styles for completion animations */
+.completion-container {
+  padding: 2rem;
+}
+
+.check-circle {
+  display: inline-block;
+  animation: scale-in 0.5s ease-out forwards;
+}
+
+.check-circle i {
+  font-size: 6rem;
+  animation: pulse 2s infinite;
+}
+
+.completion-text {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  animation: slide-in-top 0.5s ease-out 0.2s both;
+}
+
+.fade-in-text {
+  opacity: 0;
+  animation: fade-in 1s ease-out 0.5s forwards;
+}
+
+.stats-container {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  animation: fade-in 1s ease-out 0.8s forwards;
+  opacity: 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #28a745;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.pulse-button {
+  animation: pulse-button 2s infinite;
+  opacity: 0;
+  animation-delay: 1.2s;
+  animation-fill-mode: forwards;
+}
+
+/* Animation keyframes */
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-top {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-button {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>
