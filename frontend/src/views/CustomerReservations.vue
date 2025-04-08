@@ -9,7 +9,7 @@
             </router-link>
             <div class="dashboard-user">
               <div class="dropdown">
-                <button class="btn dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn dropdown-toggle" type="button" id="userDropdown" @click="toggleDropdown">
                   <i class="fas fa-user-circle"></i>
                   <span v-if="user">{{ user.customerName }}</span>
                   <span v-else>Loading...</span>
@@ -190,6 +190,12 @@ export default {
     const isProcessingCancellation = ref(false);
     const cancellationSuccess = ref(false);
     const cancellationError = ref('');
+
+    // toggle dropdown manually
+    const toggleDropdown = (event) => {
+      const dropdownMenu = event.target.closest('.dropdown').querySelector('.dropdown-menu');
+      dropdownMenu.classList.toggle('show');
+    };
 
     // bootstrap modal instance, modal class
     const initModal = () => {
@@ -456,7 +462,8 @@ export default {
       getStatusClass,
       cancelReservation,
       confirmCancellation,
-      logout
+      logout,
+      toggleDropdown
     };
   }
 };
