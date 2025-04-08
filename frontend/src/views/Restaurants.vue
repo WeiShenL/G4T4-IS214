@@ -126,7 +126,7 @@
                   @click="bookRestaurant(restaurant)"
                   :disabled="!restaurant.availability"
                 >
-                  View Menu & Order (& Book)
+                  {{ buttonText }}
                 </button>
                 <button class="btn btn-outline-primary btn-sm" @click="viewRestaurantDetails(restaurant)">
                   View Details
@@ -165,6 +165,7 @@ export default {
     const searchQuery = ref('');
     const cuisineFilter = ref('');
     const availabilityFilter = ref('');
+    const orderType = ref('dine_in'); // Default to dine_in
     
     // Computed property to get unique cuisines
     const availableCuisines = computed(() => {
@@ -172,9 +173,20 @@ export default {
       return [...new Set(cuisines)].sort();
     });
     
+    // Computed property for button text based on order type
+    const buttonText = computed(() => {
+      return orderType.value === 'delivery' ? 'Order & Delivery' : 'Order & Book';
+    });
+    
     // Load user data and restaurants when component mounts
     onMounted(async () => {
       try {
+        // Get order type from localStorage
+        const storedOrderType = localStorage.getItem('orderType');
+        if (storedOrderType) {
+          orderType.value = storedOrderType;
+        }
+        
         await loadUserData();
         await loadRestaurants();
       } catch (error) {
@@ -277,6 +289,8 @@ export default {
     
     // Navigate to the restaurant menu page
     const bookRestaurant = (restaurant) => {
+      // Store restaurant and order type info for the menu page
+      localStorage.setItem('selectedRestaurant', JSON.stringify(restaurant));
       // Navigate to the restaurant menu page
       router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
     };
@@ -312,6 +326,8 @@ export default {
       cuisineFilter,
       availabilityFilter,
       availableCuisines,
+      orderType,
+      buttonText,
       filterRestaurants,
       bookRestaurant,
       viewRestaurantDetails,

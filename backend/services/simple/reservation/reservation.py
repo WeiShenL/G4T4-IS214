@@ -190,6 +190,7 @@ def cancel_reservation(reservation_id):
             "error": f"An error occurred: {str(e)}"
         }), 500
  
+ # update order_id and payment_id in the reservation
 @app.route('/reservation/reallocate/<int:reservation_id>', methods=['PATCH'])
 def update_reservation(reservation_id):
     try:
@@ -204,6 +205,8 @@ def update_reservation(reservation_id):
             update_data["status"] = data["status"]
         if "order_id" in data:
             update_data["order_id"] = data["order_id"]
+        if "payment_id" in data:
+            update_data["payment_id"] = data["payment_id"]
         
         # If no update data, return error
         if not update_data:
@@ -229,7 +232,8 @@ def update_reservation(reservation_id):
             "user_id": updated_response.data[0].get('user_id'),
             "table_no": updated_response.data[0].get('table_no'),
             "status": updated_response.data[0].get('status'),
-            "order_id": updated_response.data[0].get('order_id')
+            "order_id": updated_response.data[0].get('order_id'),
+            "payment_id": updated_response.data[0].get('payment_id')
         }), 200
     
     except Exception as e:

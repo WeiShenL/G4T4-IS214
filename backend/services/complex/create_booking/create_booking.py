@@ -86,18 +86,23 @@ def create_booking():
     try:
         # Get request data
         data = request.json
+        order_type = data.get('order_type', 'dine_in')
         
         # Validate required fields for the combined order and reservation
         required_fields = [
-            'restaurant_id', 'user_id', 'count', 'time', 'payment_id',
+            'restaurant_id', 'user_id', 'payment_id',
             'item_name', 'quantity', 'order_price'
         ]
+        
+        if order_type == 'dine_in':
+            # Additional fields required for dine-in orders
+            required_fields.extend(['count', 'time'])
         
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
         
-        # First create the order with order_type as "dine_in(pending)"
+        # Create the order with the appropriate order_type (dine_in or delivery)
         order_data = {
             "user_id": data['user_id'],
             "restaurant_id": data['restaurant_id'],
@@ -105,7 +110,7 @@ def create_booking():
             "quantity": data['quantity'],
             "order_price": data['order_price'],
             "payment_id": data['payment_id'],
-            "order_type": "dine_in(pending)"  # Initially set as pending
+            "order_type": "dine_in(pending)" if order_type == 'dine_in' else "delivery"
         }
         
         # Call order service to create the order
@@ -129,7 +134,83 @@ def create_booking():
         order_id = order_data.get("data", {}).get("order_id")
         if not order_id:
             return jsonify({"error": "Order ID not found in response"}), 500
-            
+        
+        # Handle delivery order vs. dine-in order
+        if order_type == 'delivery':
+            # For delivery orders, we're done - no reservation needed
+            # Queue a delivery confirmation message to RabbitMQ
+            try:
+                # Get user details for notifications
+                user_id = data.get("user_id")
+                try:
+                    user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+                    user_response.raise_for_status()
+                    user_data = user_response.json()
+                    
+                    # Extract the user details we need
+                    user_name = user_data.get("data", {}).get("customer_name", "Customer")
+                    user_phone = user_data.get("data", {}).get("phone_number", "")
+                except requests.exceptions.RequestException as e:
+                    print(f"Failed to fetch user details: {str(e)}")
+                    user_name = "Customer"
+                    user_phone = ""
+                    
+                # Get restaurant details
+                restaurant_id = data['restaurant_id']
+                try:
+                    restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
+                    restaurant_response.raise_for_status()
+                    restaurant_data = restaurant_response.json()
+                    
+                    # Extract restaurant name
+                    restaurant_name = restaurant_data.get("data", {}).get("name", f"Restaurant #{restaurant_id}")
+                except requests.exceptions.RequestException as e:
+                    print(f"Failed to fetch restaurant details: {str(e)}")
+                    restaurant_name = f"Restaurant #{restaurant_id}"
+                
+                notification_data = {
+                    "order_id": order_id,
+                    "user_id": user_id,
+                    "user_name": user_name,
+                    "user_phone": user_phone,
+                    "restaurant_id": restaurant_id,
+                    "restaurant_name": restaurant_name,
+                    "payment_id": data.get("payment_id"),
+                    "message_type": "delivery.confirmation"
+                }
+                
+                notification_sent = publish_message("delivery.confirmation", notification_data)
+                
+                status_message = "Delivery order created and confirmation notification sent."
+                status_code = 201
+                
+                if not notification_sent:
+                    status_message = "Delivery order created but notification could not be sent (RabbitMQ issue)."
+                    status_code = 207  # Partial success
+                
+                # Return response with appropriate message
+                return jsonify({
+                    "message": status_message,
+                    "status": "booked",
+                    "order_id": order_id,
+                    "data": {
+                        "order": order_data.get("data", {})
+                    }
+                }), status_code
+                
+            except Exception as e:
+                print(f"Error in notification handling: {str(e)}")
+                # Return partial success since the order was created
+                return jsonify({
+                    "message": "Delivery order created but notification could not be sent.",
+                    "status": "booked",
+                    "order_id": order_id,
+                    "data": {
+                        "order": order_data.get("data", {})
+                    }
+                }), 207
+        
+        # If we're here, it's a dine-in order
         # Get restaurant capacity and current reservations
         restaurant_id = data['restaurant_id']
         print(f"Checking capacity for restaurant {restaurant_id}")

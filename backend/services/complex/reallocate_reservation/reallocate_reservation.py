@@ -147,24 +147,30 @@ def reallocate_reservation():
                 
                 # Get the most recent order (assumed to be first in the list)
                 orders = orders_data.get("data", {}).get("orders", [])
+                payment_id = None
                 if not orders:
                     print(f"No orders found for user {user_id}")
                 else:
+                    # or logic to deduct created_at with current date to retrieve the most recent order
                     most_recent_order = orders[0]  # API returns orders ordered by created_at desc
                     order_id = most_recent_order.get("order_id")
-                    print(f"Found order ID: {order_id} for user {user_id}")
+                    payment_id = most_recent_order.get("payment_id")
+                    print(f"Found order ID: {order_id} and payment ID: {payment_id} for user {user_id}")
             except requests.exceptions.RequestException as e:
                 print(f"Error calling Orders API: {str(e)}")
                 order_id = None
+                payment_id = None
             
             reservation_update_data = {
                 "user_id": user_id,
                 "status": "Pending",
             }
             
-            # Include order_id in the update if found
+            # Include order_id and payment_id in the update if found
             if order_id:
                 reservation_update_data["order_id"] = order_id
+            if payment_id:
+                reservation_update_data["payment_id"] = payment_id
             
             reservation_response = requests.patch(
                 f"http://localhost:5002/reservation/reallocate/{reservation_id}", 
