@@ -64,7 +64,7 @@
           <p class="mb-0">Payment ID: {{ paymentId }}</p>
           <div class="mt-3">
             <button @click="goToReservations" class="btn btn-primary">
-              <i class="fas fa-calendar-check me-2"></i> View My Orders
+              <i class="fas fa-calendar-check me-2"></i> View My Reservations
             </button>
           </div>
         </div>
