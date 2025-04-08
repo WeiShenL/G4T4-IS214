@@ -427,6 +427,37 @@ export default {
       }
     };
 
+
+    // Function to fetch and send driver location
+    const updateDriverLocation = async () => {
+      try {
+        const driverId = user.value?.id;
+        if (!driverId) {
+          console.error("No driver ID available");
+          return;
+        }
+
+        // Use your backend proxy that handles both Google API call and DB update
+        const response = await fetch(`http://localhost:5012/proxy-geolocation/${driverId}`, {
+          method: "POST",  // This endpoint on your server expects POST
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ considerIp: true })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Location update failed: ${errorData.message}`);
+        }
+
+        const data = await response.json();
+        console.log("Driver location successfully updated:", data);
+        
+      } catch (err) {
+        console.error("Error updating driver location:", err);
+      }
+    };
+
+
     // Load user data when component mounts
     onMounted(async () => {
       try {
@@ -506,6 +537,10 @@ export default {
             initMap();
             // if want to auto fetch data, after map initialisation then uncomment this
             // fetchDeliveryData();
+            
+            // tracking live location
+            updateDriverLocation(); // Immediate first update
+            setInterval(updateDriverLocation, 60 * 60 * 1000); // Hourly updates
           } else {
             console.warn('Map container not available yet, will initialize later');
             // Try again after a short delay to allow the DOM to render
@@ -514,6 +549,8 @@ export default {
                 initMap();
                 // if want to auto fetch data, after map initialisation then uncomment this
                 // fetchDeliveryData();
+
+                
               } else {
                 console.error('Map container still not available after delay');
               }
@@ -528,6 +565,9 @@ export default {
         isLoading.value = false;
       }
     });
+
+   
+
     
     // Logout function
     const logout = async () => {
