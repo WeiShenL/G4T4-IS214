@@ -202,8 +202,10 @@ def proxy_geolocation(driver_id):
     Proxy requests to Google Geolocation API to avoid CORS issues
     """
     try:
+        # API key from .env
+        google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
         
-        url = f"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyA_-ROgMNf8_3OYskUQklbbbH4XIl8WaRk"
+        url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={google_maps_api_key}"
         
         # Forward the request to Google - which requires POST
         response = requests.post(url, json={"considerIp": True})
