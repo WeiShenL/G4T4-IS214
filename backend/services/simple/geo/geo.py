@@ -77,7 +77,6 @@ def geocode_address(address):
         # Fall back to default Singapore central location
         print(f"Using default Singapore central location for {address}")
         return "1.3521,103.8198"  # Singapore central coordinates
-
     
 def calculate_distance(lat1, lon1, lat2, lon2):
     #Calculate the distance between two GPS coordinates using the Haversine formula.
