@@ -275,37 +275,38 @@ def deliver_order():
     except Exception as e:
         print(f"Error delivering order: {str(e)}")
         return jsonify({"code": 500, "message": "An error occurred while delivering the order."}), 500
-    
-@app.route("/driver-stats/<uuid:driver_id>", methods=['GET'])
-def get_driver_stats(driver_id):
-    try:
-        # Call the driver_details microservice to get the driver stats
-        driver_stats_response = requests.get(f"http://localhost:5012/driverdetails/{driver_id}")
+
+# not needed now since calling directly from the atomic driverdetail msc 
+# @app.route("/driver-stats/<uuid:driver_id>", methods=['GET'])
+# def get_driver_stats(driver_id):
+#     try:
+#         # Call the driver_details microservice to get the driver stats
+#         driver_stats_response = requests.get(f"http://localhost:5012/driverdetails/{driver_id}")
         
-        if driver_stats_response.status_code != 200:
-            return jsonify({
-                "code": driver_stats_response.status_code, 
-                "message": "Failed to fetch driver stats."
-            }), driver_stats_response.status_code
+#         if driver_stats_response.status_code != 200:
+#             return jsonify({
+#                 "code": driver_stats_response.status_code, 
+#                 "message": "Failed to fetch driver stats."
+#             }), driver_stats_response.status_code
         
-        # Get the driver stats from the response
-        stats_data = driver_stats_response.json().get("data", {})
+#         # Get the driver stats from the response
+#         stats_data = driver_stats_response.json().get("data", {})
         
-        # Return the driver stats
-        return jsonify({
-            "code": 200,
-            "data": {
-                "total_deliveries": stats_data.get("total_deliveries", 0),
-                "total_earnings": stats_data.get("total_earnings", 0)
-            }
-        })
+#         # Return the driver stats
+#         return jsonify({
+#             "code": 200,
+#             "data": {
+#                 "total_deliveries": stats_data.get("total_deliveries", 0),
+#                 "total_earnings": stats_data.get("total_earnings", 0)
+#             }
+#         })
         
-    except Exception as e:
-        print(f"Error fetching driver stats: {str(e)}")
-        return jsonify({
-            "code": 500, 
-            "message": "An error occurred while fetching driver stats."
-        }), 500
+#     except Exception as e:
+#         print(f"Error fetching driver stats: {str(e)}")
+#         return jsonify({
+#             "code": 500, 
+#             "message": "An error occurred while fetching driver stats."
+#         }), 500
 
 if __name__ == '__main__':
     print("Starting Driverstatus Service...")

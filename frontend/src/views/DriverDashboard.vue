@@ -405,8 +405,8 @@ export default {
           return;
         }
         
-        console.log('Fetching driver stats...');
-        const response = await fetch(`http://localhost:5101/driver-stats/${driverId}`);
+        console.log('Fetching driver stats from driverdetails msc');
+        const response = await fetch(`http://localhost:5012/driverdetails/${driverId}`);
         
         if (!response.ok) {
           console.error('Failed to fetch driver stats:', response.status);
