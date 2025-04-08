@@ -59,9 +59,10 @@ MESSAGE_TEMPLATES = {
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
     "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
     #US3
-    "order.accepted": "Hi there {customer_name}! Your order (ID: {order_id}) has been assigned a driver, {driver_name}. Thank you for dining with us!",
-    "order.pickedup": "Good news {customer_name}! Your order (ID: {order_id}) has been picked up by your allocated driver. {driver_name} is on the way!",
-    "order.delivered": "Hello {customer_name}! Your order (ID: {order_id}) has been delivered. Thank you for your purchase and we hope to see you soon!"
+    "delivery.order.confirmation": "Hi there {customer_name}! Your order (ID: {order_id}) has been confirmed for delivery. Thank you for ordering with us!",
+    "delivery.order.accepted": "Hi there {customer_name}! Your order (ID: {order_id}) has been assigned a driver, {driver_name}. Thank you for ordering with us!",
+    "delivery.order.pickedup": "Good news {customer_name}! Your order (ID: {order_id}) has been picked up by your allocated driver. {driver_name} is on the way!",
+    "delivery.order.delivered": "Hello {customer_name}! Your order (ID: {order_id}) has been delivered. Thank you for your purchase and we hope to see you soon!"
 }
 
 # Sends an SMS via Twilio
@@ -190,9 +191,10 @@ def start_rabbitmq_consumer():
                 "Reallocation_Notice": "reallocation.notice",
                 "Reallocation_Confirmation": "reallocation.confirmation",
                 "Waitlist_Notification": "waitlist.notification",
-                "Order_Accepted" : "order.accepted",
-                "Order_Pickedup" : "order.pickedup",
-                "Order_Delivered" : "order.delivered"
+                "Delivery_Order_Accepted" : "delivery.order.accepted",
+                "Delivery_Order_Pickedup" : "delivery.order.pickedup",
+                "Delivery_Order_Delivered" : "delivery.order.delivered",
+                "Delivery_Order_Confirmation" : "delivery.order.confirmation"
             }
 
             for queue_name, routing_key in queues.items():

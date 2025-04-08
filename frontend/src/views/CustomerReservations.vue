@@ -9,14 +9,14 @@
             </router-link>
             <div class="dashboard-user">
               <div class="dropdown">
-                <button class="btn dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn dropdown-toggle" type="button" id="userDropdown" @click="toggleDropdown">
                   <i class="fas fa-user-circle"></i>
                   <span v-if="user">{{ user.customerName }}</span>
                   <span v-else>Loading...</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                  <li><router-link class="dropdown-item" to="/customer-profile"><i class="fas fa-user-cog"></i> My Profile</router-link></li>
-                  <li><router-link class="dropdown-item" to="/customer-orders"><i class="fas fa-receipt"></i> My Orders</router-link></li>
+                  <li><router-link class="dropdown-item" to="/customer-dashboard"><i class="fas fa-home"></i> Dashboard</router-link></li>
+                  <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-receipt"></i> My Orders</router-link></li>
                   <li><hr class="dropdown-divider"></li>
                   <li><a class="dropdown-item" href="#" @click.prevent="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                 </ul>
@@ -190,6 +190,12 @@ export default {
     const isProcessingCancellation = ref(false);
     const cancellationSuccess = ref(false);
     const cancellationError = ref('');
+
+    // toggle dropdown manually
+    const toggleDropdown = (event) => {
+      const dropdownMenu = event.target.closest('.dropdown').querySelector('.dropdown-menu');
+      dropdownMenu.classList.toggle('show');
+    };
 
     // bootstrap modal instance, modal class
     const initModal = () => {
@@ -456,7 +462,8 @@ export default {
       getStatusClass,
       cancelReservation,
       confirmCancellation,
-      logout
+      logout,
+      toggleDropdown
     };
   }
 };

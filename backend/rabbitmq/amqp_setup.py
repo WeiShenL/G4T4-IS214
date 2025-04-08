@@ -96,18 +96,24 @@ create_queue(
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
-    queue_name="Order_Accepted",
-    routing_key="order.accepted",
+    queue_name="Delivery_Order_Confirmation",
+    routing_key="delivery.order.confirmation",
 )
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
-    queue_name="Order_Pickedup",
-    routing_key="order.pickedup",
+    queue_name="Delivery_Order_Accepted",
+    routing_key="delivery.order.accepted",
 )
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
-    queue_name="Order_Delivered",
-    routing_key="order.delivered",
+    queue_name="Delivery_Order_Pickedup",
+    routing_key="delivery.order.pickedup",
+)
+create_queue(
+    channel=channel,
+    exchange_name=exchange_name,
+    queue_name="Delivery_Order_Delivered",
+    routing_key="delivery.order.delivered",
 )
