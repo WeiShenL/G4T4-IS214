@@ -165,9 +165,9 @@ export default {
       // yet to change link
       {
         icon: 'fas fa-list-alt',
-        title: 'View My Takeaway Orders',
+        title: 'View My Home Delivery Orders',
         link: '/reservations',
-        linkText: 'See Orders'
+        linkText: 'See Delivery Orders'
       }
     ];
     

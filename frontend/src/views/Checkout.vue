@@ -33,8 +33,10 @@
         <div class="row mb-4">
           <div class="col-12">
             <div class="welcome-card">
-              <h2>Checkout & Table Reservation</h2>
-              <p>Complete your reservation and pre-order</p>
+              <h2 v-if="orderType === 'delivery'">Checkout & Delivery</h2>
+              <h2 v-else>Checkout & Table Reservation</h2>
+              <p v-if="orderType === 'delivery'">Complete your order for delivery</p>
+              <p v-else>Complete your reservation and pre-order</p>
             </div>
           </div>
         </div>
@@ -52,10 +54,26 @@
           {{ errorMessage }}
         </div>
         
-        <!-- Order Placed Success Message -->
+        <!-- Order FOR DELIVERY Placed Success Message -->
         <div v-if="orderPlaced" class="alert alert-success" role="alert">
-          <h4 class="alert-heading">Reservation & Pre-Order Placed Successfully!</h4>
-          <p>Your table has been reserved and your food pre-order has been placed. Thank you!</p>
+          <h4 v-if="orderType === 'delivery'" class="alert-heading">Delivery Order Placed Successfully!</h4>
+          <h4 v-else class="alert-heading">Reservation & Pre-Order Placed Successfully!</h4>
+          <p v-if="orderType === 'delivery'">Your food order has been placed and will be delivered to your address. Thank you!</p>
+          <p v-else>Your table has been reserved and your food pre-order has been placed. Thank you!</p>
+          <hr>
+          <p class="mb-0">Payment ID: {{ paymentId }}</p>
+          <div class="mt-3">
+            <button @click="goToReservations" class="btn btn-primary">
+              <i class="fas fa-calendar-check me-2"></i> View My Orders
+            </button>
+          </div>
+        </div>
+        
+        <!-- Waitlist Message (if capacity full)--> 
+        <div v-if="waitlisted" class="alert alert-warning" role="alert">
+          <h4 class="alert-heading">Added to Waitlist!</h4>
+          <p>The restaurant is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available.</p>
+          <p>Your order has been processed as "dine-in(pending)" and will be confirmed once a table is available.</p>
           <hr>
           <p class="mb-0">Payment ID: {{ paymentId }}</p>
           <div class="mt-3">
@@ -66,7 +84,7 @@
         </div>
         
         <!-- Checkout Content -->
-        <div v-if="!isLoading && !orderPlaced && orderInfo" class="row">
+        <div v-if="!isLoading && !orderPlaced && !waitlisted && orderInfo" class="row">
           <!-- Order Summary -->
           <div class="col-md-5">
             <div class="card mb-4">
@@ -112,7 +130,7 @@
                   type="button" 
                   class="btn btn-primary w-100" 
                   @click="proceedToStripeCheckout" 
-                  :disabled="isSubmitting || !partySize || !reservationDateTime"
+                  :disabled="isSubmitting || (orderType === 'dine_in' && (!partySize || !reservationDateTime))"
                 >
                   <span v-if="isSubmitting">
                     <i class="fas fa-spinner fa-spin"></i> Processing...
@@ -131,7 +149,7 @@
             </div>
           </div>
           
-          <!-- Reservation Info and Checkout Button -->
+          <!-- Reservation Info for dine-in -->
           <div class="col-md-7" v-if="orderType === 'dine_in'">
             <div class="card">
               <div class="card-header">
@@ -186,15 +204,51 @@
                     placeholder="E.g., Birthday celebration, allergies, etc."
                   ></textarea>
                 </div>
-                
+              </div>
+            </div>
+          </div>
 
+          <!-- Delivery Info when order type is delivery -->
+          <div class="col-md-7" v-if="orderType === 'delivery'">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="mb-0">Delivery Information</h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">Delivery Address</label>
+                  <div class="delivery-address-display p-3 bg-light rounded">
+                    <div><strong>Name:</strong> {{ user?.customerName }}</div>
+                    <div><strong>Address:</strong> {{ user?.streetAddress }}</div>
+                    <div><strong>Postal Code:</strong> {{ user?.postalCode }}</div>
+                    <div><strong>Phone:</strong> {{ user?.phoneNumber }}</div>
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="deliveryInstructions" class="form-label">Delivery Instructions (Optional)</label>
+                  <textarea 
+                    class="form-control" 
+                    id="deliveryInstructions" 
+                    v-model="specialRequests" 
+                    rows="2" 
+                    placeholder="E.g., Leave at door, call on arrival, etc."
+                  ></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label for="expectedDeliveryTime" class="form-label">Expected Delivery Time</label>
+                  <div class="p-3 bg-light rounded">
+                    <p class="mb-0"><i class="fas fa-clock me-2"></i> Approximately 30-45 minutes after order confirmation</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
         
         <!-- No Order Info -->
-        <div v-if="!isLoading && !orderInfo && !orderPlaced" class="empty-state">
+        <div v-if="!isLoading && !orderInfo && !orderPlaced && !waitlisted" class="empty-state">
           <i class="fas fa-shopping-cart"></i>
           <p>No order information found.</p>
           <small>Please select items from a restaurant menu first.</small>
@@ -232,6 +286,7 @@ export default {
     const paymentError = ref('');
     const isSubmitting = ref(false);
     const orderPlaced = ref(false);
+    const waitlisted = ref(false);
     const paymentId = ref('');
     
     // Reservation fields
@@ -507,6 +562,23 @@ export default {
           
           // Show success message
           orderPlaced.value = true;
+          // waitlist scenario hereeee
+        } else if (bookingResult.status === "waitlisted") {
+          // Clear stored data from localStorage
+          localStorage.removeItem('orderInfo');
+          localStorage.removeItem('reservation_party_size');
+          localStorage.removeItem('reservation_table_no');
+          localStorage.removeItem('reservation_date_time');
+          localStorage.removeItem('reservation_special_requests');
+          localStorage.removeItem('stripe_payment_intent_id');
+          localStorage.removeItem('stripe_amount');
+          localStorage.removeItem('orderType');
+
+          // Set payment ID for display
+          paymentId.value = stripePaymentIntentId;
+          
+          // Show waitlist message by setting a new state
+          waitlisted.value = true;
         }
       } catch (error) {
         console.error('Error handling Stripe return:', error);
@@ -538,6 +610,7 @@ export default {
       paymentError,
       isSubmitting,
       orderPlaced,
+      waitlisted,
       paymentId,
       partySize,
       preferredTable,
