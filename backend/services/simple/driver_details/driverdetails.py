@@ -6,6 +6,8 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from uuid import UUID
+import requests
+
 
 load_dotenv()
 
@@ -130,6 +132,7 @@ def update_driver_availability(driver_id):
             }
         ), 500
 
+
 @app.route("/driverdetails/<uuid:driver_id>/complete-delivery", methods=['PATCH'])
 def update_delivery_completion(driver_id):
     """
@@ -191,6 +194,56 @@ def update_delivery_completion(driver_id):
                 "message": f"An error occurred while updating driver delivery stats: {str(e)}"
             }
         ), 500
+    
+# update live location
+@app.route("/proxy-geolocation/<uuid:driver_id>", methods=['POST'])
+def proxy_geolocation(driver_id):
+    """
+    Proxy requests to Google Geolocation API to avoid CORS issues
+    """
+    try:
+        # API key from .env
+        google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
+        
+        url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={google_maps_api_key}"
+        
+        # Forward the request to Google - which requires POST
+        response = requests.post(url, json={"considerIp": True})
+        
+        if response.ok:
+            location_data = response.json()
+            
+            # Now update your driver's location with the result
+            driver_id_str = str(driver_id)
+            location_str = f"{location_data['location']['lat']},{location_data['location']['lng']}"
+            
+            # Update driver location in your database
+            update_response = supabase.table("driverdetails").update({
+                "live_location": location_str
+            }).eq("driver_id", driver_id_str).execute()
+            
+            return jsonify({
+                "code": 200,
+                "message": "Driver location updated successfully.",
+                "data": {
+                    "location": location_data['location'],
+                    "accuracy": location_data.get('accuracy')
+                }
+            }), 200
+        else:
+            return jsonify({
+                "code": response.status_code,
+                "message": "Error from Google Geolocation API"
+            }), response.status_code
+    
+    except Exception as e:
+        print(f"Error in geolocation proxy: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
+
 
 # Main entry point
 if __name__ == '__main__':

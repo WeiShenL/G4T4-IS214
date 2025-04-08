@@ -366,10 +366,12 @@ export default {
       }
     };
 
+
+    // complete order
     // complete order
     const completeOrder = () => {
       orderCompleted.value = true;
-
+      
       // Launch confetti celebration animation
       window.confetti({
         particleCount: 150,
@@ -377,22 +379,64 @@ export default {
         origin: { y: 0.6 },
         colors: ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#800080']
       });
-
-      // Call the deliver-order API after completing the order
-      fetch('http://localhost:5101/deliver-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          driver_id: routingData.value.driver.id,
-          order_id: orderId
-        })
+      
+      const driverId = routingData.value.driver.id;
+      
+      // First, delete the geospatial data (to handle foreign key constraint)
+      fetch(`http://localhost:7000/delete-geospatial/${orderId}`, {
+        method: 'DELETE'
       })
-        .then((res) => res.json())
+        .then((res) => {
+          // Check if the response is JSON
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return res.json();
+          }
+          return res.ok ? {} : Promise.reject('Failed to delete geospatial data');
+        })
         .then((data) => {
-          console.log('Order delivered successfully:', data);
+          console.log('Geospatial data deleted:', data);
+          
+          // Then, delete the order completely (instead of updating status)
+          return fetch(`http://localhost:5004/api/orders/${orderId}`, {
+            method: 'DELETE'  // Changed to DELETE to remove the order
+          });
+        })
+        .then((res) => {
+          // Check if the response is JSON
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return res.json();
+          }
+          return res.ok ? {} : Promise.reject('Failed to delete order');
+        })
+        .then((data) => {
+          console.log('Order deleted:', data);
+          
+          // Finally, update driver stats through deliver-order API
+          return fetch('http://localhost:5101/deliver-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              driver_id: driverId,
+              order_id: orderId  // Still pass the order ID for reference/logging
+            })
+          });
+        })
+        .then((res) => {
+          // Check if the response is JSON
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return res.json();
+          }
+          return res.ok ? {} : Promise.reject('Failed to update driver stats');
+        })
+        .then((data) => {
+          console.log('Order delivered successfully, driver stats updated:', data);
         })
         .catch((err) => {
-          console.error('Failed to deliver order:', err);
+          console.error('Error in order completion process:', err);
+          errorMessage.value = 'Failed to complete order. Please try again.';
         });
     };
 
@@ -423,6 +467,7 @@ export default {
               // remember to chagne backkkkkkkkkkkkkkkkkkk to thissssssssssssssss
               routingData.value = data;
               localStorage.setItem('routingData', JSON.stringify(data)); 
+
               // use static for now
               // routingData.value = staticData;
               // console.log('Loaded static routing data:', routingData.value);

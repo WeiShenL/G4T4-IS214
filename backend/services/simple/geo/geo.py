@@ -21,7 +21,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Geocoding function
 def geocode_address(address):
-    
+
     #Converts an address into a coordinate string "(latitude,longitude)" using OpenStreetMap Nominatim API.
     #:param address: The address to geocode (e.g., "123 Test St").
     #:return: A string in the format "(latitude,longitude)", or None if geocoding fails.
@@ -225,6 +225,42 @@ def find_nearby_restaurants():
     except Exception as e:
         print(f"Error finding nearby restaurants: {str(e)}")
         return jsonify({"code": 500, "message": "An error occurred while processing the request."}), 500
+    
+# delete by id
+@app.route("/delete-geospatial/<string:order_id>", methods=['DELETE'])
+def delete_geospatial(order_id):
+    """
+    Deletes a record from the geospatial table based on the order_id.
+    :param order_id: The ID of the order to delete.
+    :return: JSON response indicating success or failure.
+    """
+    try:
+        print(f"Attempting to delete geospatial record for order_id: {order_id}")
+
+        # Delete the record with the given order_id
+        response = supabase.table("geospatial").delete().eq("order_id", order_id).execute()
+
+        # Check if the response contains an error
+        if hasattr(response, 'error') and response.error:
+            print(f"Error deleting geospatial record: {response.error.message}")
+            return jsonify({
+                "code": 500,
+                "message": f"Failed to delete geospatial record: {response.error.message}"
+            }), 500
+
+        # If no error, proceed with success response
+        print(f"Successfully deleted geospatial record for order_id: {order_id}")
+        return jsonify({
+            "code": 200,
+            "message": f"Geospatial record for order_id {order_id} deleted successfully."
+        }), 200
+
+    except Exception as e:
+        print(f"Error during geospatial deletion: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
     
 if __name__ == '__main__':
     print("Starting Geospatial Service...")

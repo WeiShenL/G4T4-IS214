@@ -158,12 +158,12 @@ export default {
     const driverStats = [
       {
         icon: 'fas fa-truck',
-        title: 'Today\'s Deliveries',
+        title: 'Total Deliveries',
         value: '0'
       },
       {
         icon: 'fas fa-dollar-sign',
-        title: 'Today\'s Earnings',
+        title: 'Total Earnings',
         value: '$0.00'
       },
       {
@@ -427,6 +427,84 @@ export default {
       }
     };
 
+
+    // Function to fetch and send driver location
+    const updateDriverLocation = async () => {
+      try {
+        const driverId = user.value?.id;
+        if (!driverId) {
+          console.error("No driver ID available");
+          return;
+        }
+
+        // Use HTML5 Geolocation API for better accuracy
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              // GPS coordinates from browser
+              const latitude = position.coords.latitude;
+              const longitude = position.coords.longitude;
+              
+              // Send the accurate coordinates to the backend
+              const response = await fetch(`http://localhost:5012/driverdetails/${driverId}`, {
+                method: "PATCH",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  live_location: `${latitude},${longitude}`
+                })
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Location update failed: ${errorData.message}`);
+              }
+
+              const data = await response.json();
+              console.log("Driver location successfully updated", data);
+              
+              // If we need to update the map, do it here
+              if (map.value && markers.value.length > 0) {
+                // Find the driver marker (green marker)
+                const driverMarker = markers.value.find(marker => 
+                  marker.getIcon() === 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                );
+                
+                if (driverMarker) {
+                  // Update the marker position
+                  driverMarker.setPosition({ lat: latitude, lng: longitude });
+                }
+              }
+            },
+            (error) => {
+              // geolocation errors 
+              console.error("Geolocation error:", error);
+              
+              let errorMsg = "Unable to access your location.";
+              
+              // Show the error temporarily, Clear the message after a delay
+              errorMessage.value = errorMsg;
+              setTimeout(() => {
+                if (errorMessage.value === errorMsg) {
+                  errorMessage.value = ''; 
+                }
+              }, 5000);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            }
+          );
+        } else {
+          // Browser doesn't support geolocation
+          console.error("Geolocation is not supported by this browser");
+          errorMessage.value = "Geolocation is not supported by your browser. Please use a modern browser with location services.";
+        }
+      } catch (err) {
+        console.error("Error updating driver location:", err);
+      }
+    };
+
     // Load user data when component mounts
     onMounted(async () => {
       try {
@@ -506,6 +584,10 @@ export default {
             initMap();
             // if want to auto fetch data, after map initialisation then uncomment this
             // fetchDeliveryData();
+            
+            // tracking live location
+            updateDriverLocation(); // Immediate first update
+            setInterval(updateDriverLocation, 60 * 60 * 1000); // Hourly updates
           } else {
             console.warn('Map container not available yet, will initialize later');
             // Try again after a short delay to allow the DOM to render
@@ -514,6 +596,8 @@ export default {
                 initMap();
                 // if want to auto fetch data, after map initialisation then uncomment this
                 // fetchDeliveryData();
+
+                
               } else {
                 console.error('Map container still not available after delay');
               }
@@ -528,6 +612,9 @@ export default {
         isLoading.value = false;
       }
     });
+
+   
+
     
     // Logout function
     const logout = async () => {
