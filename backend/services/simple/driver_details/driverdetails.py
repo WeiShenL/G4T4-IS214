@@ -26,10 +26,10 @@ def get_driver_details_by_id(driver_id):
     If no record exists, create one with default values.
     """
     try:
-        # Convert driver_id to string (required for Supabase queries)
+        # Step 1: Convert driver_id to string (required for Supabase queries)
         driver_id_str = str(driver_id)
 
-        # Check if the driver exists in the database
+        # Step 2: Check if the driver exists in the database
         response = supabase.table("driverdetails").select("*").eq("driver_id", driver_id_str).execute()
         driver_detail = response.data
 
@@ -42,13 +42,15 @@ def get_driver_details_by_id(driver_id):
                 }
             )
 
-        # Create a new record if the driver doesn't exist
+        # Step 3: Create a new record if the driver doesn't exist
         print(f"No driver found for driver_id: {driver_id}. Creating a new record.")
 
         new_driver_detail = {
             "driver_id": driver_id_str,  # Ensure UUID is converted to string
             "live_location": None,       # Default value
-            "availability": True         # Default value
+            "availability": True,        # Default value
+            "total_deliveries": 0,       # Default value for new column
+            "total_earnings": 0.00       # Default value for new column
         }
 
         # Attempt to insert the new record
@@ -78,13 +80,15 @@ def get_driver_details_by_id(driver_id):
 
 @app.route("/driverdetails/<uuid:driver_id>", methods=['PATCH'])
 def update_driver_availability(driver_id):
-    #Update driver availability for a specific driver_id.
-    #No pre-check for driver existence is performed.
+    """
+    Update driver availability for a specific driver_id.
+    No pre-check for driver existence is performed.
+    """
     try:
-        # Convert driver_id to string (required for Supabase queries)
+        # Step 1: Convert driver_id to string (required for Supabase queries)
         driver_id_str = str(driver_id)
 
-        # Parse the request body
+        # Step 2: Parse the request body
         data = request.json
         availability = data.get("availability")
 
@@ -96,10 +100,10 @@ def update_driver_availability(driver_id):
                 }
             ), 400
 
-        # Attempt to update the driver's availability
+        # Step 3: Attempt to update the driver's availability
         update_response = supabase.table("driverdetails").update({"availability": availability}).eq("driver_id", driver_id_str).execute()
 
-        # Check if the update was successful
+        # Step 4: Check if the update was successful
         if not update_response.data:
             return jsonify(
                 {
@@ -108,7 +112,7 @@ def update_driver_availability(driver_id):
                 }
             ), 404
 
-        # Return success response
+        # Step 5: Return success response
         return jsonify(
             {
                 "code": 200,
@@ -123,6 +127,68 @@ def update_driver_availability(driver_id):
             {
                 "code": 500,
                 "message": f"An error occurred while updating driver availability: {str(e)}"
+            }
+        ), 500
+
+@app.route("/driverdetails/<uuid:driver_id>/complete-delivery", methods=['PATCH'])
+def update_delivery_completion(driver_id):
+    """
+    Update driver's total deliveries and earnings when a delivery is completed.
+    Adds 1 to total_deliveries and $5.00 to total_earnings.
+    """
+    try:
+        # Convert driver_id to string (required for Supabase queries)
+        driver_id_str = str(driver_id)
+        
+        # Default earning per delivery
+        earnings_per_delivery = 5.00
+        
+        # Step 1: Get current delivery stats
+        response = supabase.table("driverdetails").select("total_deliveries, total_earnings").eq("driver_id", driver_id_str).execute()
+        
+        if not response.data:
+            return jsonify(
+                {
+                    "code": 404,
+                    "message": f"Driver with ID {driver_id_str} not found."
+                }
+            ), 404
+            
+        # Get current values
+        current_stats = response.data[0]
+        current_deliveries = current_stats.get("total_deliveries", 0)
+        current_earnings = current_stats.get("total_earnings", 0.00)
+        
+        # Calculate new values
+        new_deliveries = current_deliveries + 1
+        new_earnings = float(current_earnings) + earnings_per_delivery
+        
+        # Step 2: Update the driver's stats
+        update_data = {
+            "total_deliveries": new_deliveries,
+            "total_earnings": new_earnings
+        }
+        
+        update_response = supabase.table("driverdetails").update(update_data).eq("driver_id", driver_id_str).execute()
+        
+        # Step 3: Return success response
+        return jsonify(
+            {
+                "code": 200,
+                "message": "Driver delivery stats updated successfully.",
+                "data": {
+                    "total_deliveries": new_deliveries,
+                    "total_earnings": new_earnings
+                }
+            }
+        ), 200
+
+    except Exception as e:
+        print(f"Error updating driver delivery stats: {str(e)}")
+        return jsonify(
+            {
+                "code": 500,
+                "message": f"An error occurred while updating driver delivery stats: {str(e)}"
             }
         ), 500
 
