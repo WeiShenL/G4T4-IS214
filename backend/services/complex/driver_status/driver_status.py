@@ -132,9 +132,9 @@ def accept_order():
             "driver_id": driver_id,
             "driver_name": driver_name,
             "customer_name": customer_name,
-            "message_type": "delivery.order.accepted",
+            "message_type": "order.accepted",
         }
-        publish_message("delivery.order.accepted", message)
+        publish_message("order.accepted", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order accepted successfully."}), 200
@@ -189,9 +189,9 @@ def pick_up_order():
             "driver_id": driver_id,
             "driver_name": driver_name,
             "customer_name": customer_name,
-            "message_type": "delivery.order.pickedup",
+            "message_type": "order.pickedup",
         }
-        publish_message("delivery.order.pickedup", message)
+        publish_message("order.pickedup", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order pickedup successfully."}), 200
@@ -213,15 +213,25 @@ def deliver_order():
         if not driver_id or not order_id:
             return jsonify({"code": 400, "message": "Missing driver_id or order_id."}), 400
 
-        # Update Driver Availability
+        # Step 1: Update Driver Availability
         driver_response = requests.patch(
             f"http://localhost:5012/driverdetails/{driver_id}",
             json={"availability": True}
         )
         if driver_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to update driver availability."}), 500
+            
+        # Step 1.5: Update driver's delivery counts and earnings
+        delivery_stats_response = requests.patch(
+            f"http://localhost:5012/driverdetails/{driver_id}/complete-delivery"
+        )
+        if delivery_stats_response.status_code != 200:
+            print(f"Warning: Failed to update driver delivery stats: {delivery_stats_response.text}")
+            # Continue execution even if this fails - non-critical update
+        else:
+            print("Successfully updated driver delivery stats")
         
-        # Fetch driver profile to get driver information
+        # step 2 Fetch driver profile to get driver information
         driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
@@ -229,7 +239,7 @@ def deliver_order():
         driver_data = driver_profile_response.json().get("data", {})
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
-        # Fetch Order Details
+        # Step 3: Fetch Order Details
         order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
@@ -238,7 +248,7 @@ def deliver_order():
         customer_id = order_data.get("user_id")
      
 
-        # Fetch Customer Details
+        # Step 4: Fetch Customer Details
         customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
@@ -255,9 +265,9 @@ def deliver_order():
             "driver_id": driver_id,
             "driver_name": driver_name,
             "customer_name": customer_name,
-            "message_type": "delivery.order.delivered",
+            "message_type": "order.delivered",
         }
-        publish_message("delivery.order.delivered", message)
+        publish_message("order.delivered", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order delivered successfully."}), 200
@@ -265,7 +275,39 @@ def deliver_order():
     except Exception as e:
         print(f"Error delivering order: {str(e)}")
         return jsonify({"code": 500, "message": "An error occurred while delivering the order."}), 500
-    
+
+# not needed now since calling directly from the atomic driverdetail msc 
+# @app.route("/driver-stats/<uuid:driver_id>", methods=['GET'])
+# def get_driver_stats(driver_id):
+#     try:
+#         # Call the driver_details microservice to get the driver stats
+#         driver_stats_response = requests.get(f"http://localhost:5012/driverdetails/{driver_id}")
+        
+#         if driver_stats_response.status_code != 200:
+#             return jsonify({
+#                 "code": driver_stats_response.status_code, 
+#                 "message": "Failed to fetch driver stats."
+#             }), driver_stats_response.status_code
+        
+#         # Get the driver stats from the response
+#         stats_data = driver_stats_response.json().get("data", {})
+        
+#         # Return the driver stats
+#         return jsonify({
+#             "code": 200,
+#             "data": {
+#                 "total_deliveries": stats_data.get("total_deliveries", 0),
+#                 "total_earnings": stats_data.get("total_earnings", 0)
+#             }
+#         })
+        
+#     except Exception as e:
+#         print(f"Error fetching driver stats: {str(e)}")
+#         return jsonify({
+#             "code": 500, 
+#             "message": "An error occurred while fetching driver stats."
+#         }), 500
+
 if __name__ == '__main__':
     print("Starting Driverstatus Service...")
     app.run(host='0.0.0.0', port=5101, debug=True)

@@ -131,7 +131,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut } from '@/services/supabase';
 import { loadGoogleMapsApi } from '@/services/googleMapsLoader';
@@ -144,6 +144,7 @@ export default {
     const isLoading = ref(true);
     const errorMessage = ref('');
     const deliveryData = ref(null);
+    const refreshNeeded = ref(true); // Flag to track if refresh is needed
 
      // Map variables
     const isFetching   = ref(false);
@@ -211,6 +212,12 @@ export default {
 
         // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
         deliveryData.value = data;
+        
+        // Check if Google Maps has loaded and map has been initialized
+        if (typeof google === 'undefined' || !map.value) {
+          console.log('Google Maps not yet loaded or map not initialized. Skipping map updates.');
+          return;
+        }
         
         // Clear existing markers
         markers.value.forEach(marker => marker.setMap(null));
@@ -286,7 +293,21 @@ export default {
       }
     };
 
-    // Add a method to handle order selection (NEWWWWWWWWWWWWWWWWWWWWWW)
+    // Watch for route changes to refresh data when returning to this page
+    watch(() => router.currentRoute.value.fullPath, (newPath) => {
+      console.log('Route changed, current path:', newPath);
+      if (newPath === '/driver-dashboard' && refreshNeeded.value && user.value?.id) {
+        console.log('Back on dashboard, refreshing data...');
+        fetchDriverStats();
+        refreshNeeded.value = false;
+        // Reset after a short delay to allow for future refreshes
+        setTimeout(() => {
+          refreshNeeded.value = true;
+        }, 1000);
+      }
+    });
+    
+    // Also set refreshNeeded to true when leaving to another route
     const selectOrder = (orderId) => {
       console.log(`Order ${orderId} selected`);
       
@@ -316,6 +337,9 @@ export default {
       };
       
       localStorage.setItem('routingData', JSON.stringify(routingData));
+      
+      // Set refresh flag before navigation
+      refreshNeeded.value = true;
       
       // Navigate to routing page with just the order ID
       router.push({
@@ -372,8 +396,37 @@ export default {
       google.maps.event.trigger(targetMarker, 'click');
     };
 
-    
-    
+    // Fetch driver stats from the driver_status microservice
+    const fetchDriverStats = async () => {
+      try {
+        const driverId = user.value?.id;
+        if (!driverId) {
+          console.error('Cannot fetch driver stats: No driver ID available');
+          return;
+        }
+        
+        console.log('Fetching driver stats from driverdetails msc');
+        const response = await fetch(`http://localhost:5012/driverdetails/${driverId}`);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch driver stats:', response.status);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('Driver stats fetched:', data);
+        
+        if (data.code === 200 && data.data) {
+          // Update the driver stats with the fetched values
+          driverStats[0].value = data.data.total_deliveries.toString();
+          driverStats[1].value = `$${data.data.total_earnings.toFixed(2)}`;
+          console.log('Driver stats updated successfully');
+        }
+      } catch (error) {
+        console.error('Error fetching driver stats:', error);
+      }
+    };
+
     // Load user data when component mounts
     onMounted(async () => {
       try {
@@ -441,31 +494,39 @@ export default {
         };
         
         console.log('User data loaded successfully');
+        
+        // Fetch driver stats after user data is loaded
+        await fetchDriverStats();
+        
+        // Load Google Maps but don't automatically fetch delivery data
+        console.log('Loading Google Maps API from onMounted');
+        loadGoogleMapsApi(() => {
+          // Ensure we have a mapContainer reference before trying to initialize the map
+          if (mapContainer.value) {
+            initMap();
+            // if want to auto fetch data, after map initialisation then uncomment this
+            // fetchDeliveryData();
+          } else {
+            console.warn('Map container not available yet, will initialize later');
+            // Try again after a short delay to allow the DOM to render
+            setTimeout(() => {
+              if (mapContainer.value) {
+                initMap();
+                // if want to auto fetch data, after map initialisation then uncomment this
+                // fetchDeliveryData();
+              } else {
+                console.error('Map container still not available after delay');
+              }
+            }, 500);
+          }
+        });
+        
       } catch (error) {
         console.error('Error loading user data:', error);
         errorMessage.value = 'Failed to load user data. Please try again.';
       } finally {
         isLoading.value = false;
       }
-
-      // Load Google Maps and initialize map
-      console.log('Loading Google Maps API from onMounted');
-      loadGoogleMapsApi(() => {
-        // Ensure we have a mapContainer reference before trying to initialize the map
-        if (mapContainer.value) {
-          initMap();
-        } else {
-          console.warn('Map container not available yet, will initialize later');
-          // Try again after a short delay to allow the DOM to render
-          setTimeout(() => {
-            if (mapContainer.value) {
-              initMap();
-            } else {
-              console.error('Map container still not available after delay');
-            }
-          }, 500);
-        }
-      });
     });
     
     // Logout function
