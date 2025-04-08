@@ -1,5 +1,3 @@
-# delete the reservation data row instead of editing the fields.
-
 import sys
 import os
 
@@ -92,7 +90,7 @@ def accept_order():
         if not driver_id or not order_id:
             return jsonify({"code": 400, "message": "Missing driver_id or order_id."}), 400
 
-        # Step 1: Update Driver Availability
+        # Update Driver Availability
         driver_response = requests.patch(
             f"http://localhost:5012/driverdetails/{driver_id}",
             json={"availability": False}
@@ -100,7 +98,7 @@ def accept_order():
         if driver_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to update driver availability."}), 500
         
-        # step 1.5 Fetch driver profile to get driver information
+        # Fetch driver profile to get driver information
         driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
@@ -108,7 +106,7 @@ def accept_order():
         driver_data = driver_profile_response.json().get("data", {})
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
-        # Step 2: Fetch Order Details
+        # Fetch Order Details
         order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
@@ -117,7 +115,7 @@ def accept_order():
         customer_id = order_data.get("user_id")
      
 
-        # Step 3: Fetch Customer Details
+        # Fetch Customer Details
         customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
@@ -126,7 +124,7 @@ def accept_order():
         customer_phone = customer_data.get("phone_number", None)
         customer_name = customer_data.get("customer_name", "Customer")  # Use the correct key for customer name
 
-        # Step 4: Publish Message to RabbitMQ
+        # Publish Message to RabbitMQ
         message = {
             "order_id": order_id,
             "customer_id": customer_id,
@@ -157,7 +155,7 @@ def pick_up_order():
         if not driver_id or not order_id:
             return jsonify({"code": 400, "message": "Missing driver_id or order_id."}), 400
         
-        # step 1 Fetch driver profile to get driver information
+        # Fetch driver profile to get driver information
         driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
@@ -165,7 +163,7 @@ def pick_up_order():
         driver_data = driver_profile_response.json().get("data", {})
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
-        # Step 2: Fetch Order Details
+        # Fetch Order Details
         order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
@@ -174,7 +172,7 @@ def pick_up_order():
         customer_id = order_data.get("user_id")
      
 
-        # Step 3: Fetch Customer Details
+        # Fetch Customer Details
         customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
@@ -183,7 +181,7 @@ def pick_up_order():
         customer_phone = customer_data.get("phone_number", None)
         customer_name = customer_data.get("customer_name", "Customer")  # Use the correct key for customer name
 
-        # Step 4: Publish Message to RabbitMQ
+        # Publish Message to RabbitMQ
         message = {
             "order_id": order_id,
             "customer_id": customer_id,
@@ -215,7 +213,7 @@ def deliver_order():
         if not driver_id or not order_id:
             return jsonify({"code": 400, "message": "Missing driver_id or order_id."}), 400
 
-        # Step 1: Update Driver Availability
+        # Update Driver Availability
         driver_response = requests.patch(
             f"http://localhost:5012/driverdetails/{driver_id}",
             json={"availability": True}
@@ -223,7 +221,7 @@ def deliver_order():
         if driver_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to update driver availability."}), 500
         
-        # step 1.5 Fetch driver profile to get driver information
+        # Fetch driver profile to get driver information
         driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
@@ -231,7 +229,7 @@ def deliver_order():
         driver_data = driver_profile_response.json().get("data", {})
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
-        # Step 2: Fetch Order Details
+        # Fetch Order Details
         order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
@@ -240,7 +238,7 @@ def deliver_order():
         customer_id = order_data.get("user_id")
      
 
-        # Step 3: Fetch Customer Details
+        # Fetch Customer Details
         customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
@@ -249,7 +247,7 @@ def deliver_order():
         customer_phone = customer_data.get("phone_number", None)
         customer_name = customer_data.get("customer_name", "Customer")  # Use the correct key for customer name
 
-        # Step 4: Publish Message to RabbitMQ
+        # Publish Message to RabbitMQ
         message = {
             "order_id": order_id,
             "customer_id": customer_id,
