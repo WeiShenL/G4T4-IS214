@@ -17,14 +17,14 @@ from twilio.rest import Client
 from datetime import datetime
 from supabase import create_client, Client as SupabaseClient
 
-# RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
-RABBITMQ_EXCHANGE = "notification_topic"
-RABBITMQ_EXCHANGE_TYPE = "topic"
-
 # Load environment variables
 load_dotenv()
+
+# RabbitMQ configuration
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
+RABBITMQ_EXCHANGE = "notification_topic"
+RABBITMQ_EXCHANGE_TYPE = "topic"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -253,4 +253,5 @@ def health_check():
 if __name__ == '__main__':
     # Start RabbitMQ consumer in a separate thread
     threading.Thread(target=start_rabbitmq_consumer, daemon=True).start()
-    app.run(host='0.0.0.0', port=5005, debug=True)
+    port = int(os.environ.get('PORT', 5005))
+    app.run(host='0.0.0.0', port=port, debug=True)
