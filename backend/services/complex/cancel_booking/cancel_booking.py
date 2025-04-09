@@ -25,7 +25,7 @@ NOTIFICATION_SERVICE_URL = os.environ.get("NOTIFICATION_SERVICE_URL", "http://no
 REALLOCATE_RESERVATION_SERVICE_URL = os.environ.get("REALLOCATE_RESERVATION_SERVICE_URL", "http://reallocate-reservation-service:5000")
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
