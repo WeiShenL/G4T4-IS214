@@ -35,6 +35,38 @@
             <div class="welcome-card">
               <h2>Restaurants</h2>
               <p>Discover and explore restaurants near you</p>
+              
+              <!-- Mode Selection Buttons -->
+              <div class="mode-selection mt-3">
+                <button 
+                  class="btn btn-lg me-2" 
+                  :class="orderType === 'dine_in' ? 'btn-primary' : 'btn-outline-primary'"
+                  @click="setOrderType('dine_in')"
+                >
+                  <i class="fas fa-utensils me-2"></i>Dine In
+                </button>
+                <button 
+                  class="btn btn-lg" 
+                  :class="orderType === 'delivery' ? 'btn-primary' : 'btn-outline-primary'"
+                  @click="setOrderType('delivery')"
+                >
+                  <i class="fas fa-motorcycle me-2"></i>Delivery
+                </button>
+              </div>
+              
+              <!-- Mode Indicator -->
+              <div class="mode-indicator mt-3" v-if="orderType === 'delivery'">
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <strong>Delivery Mode:</strong> Your order will be delivered to your address.
+                </div>
+              </div>
+              <div class="mode-indicator mt-3" v-else>
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <strong>Dine In Mode:</strong> You can book a table and dine at the restaurant.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -116,8 +148,11 @@
                 <div class="restaurant-address">
                   <i class="fas fa-map-marker-alt"></i> {{ restaurant.address }}
                 </div>
-                <div class="restaurant-capacity">
-                  <i class="fas fa-users"></i> Capacity: {{ restaurant.capacity }} people
+                <div class="restaurant-capacity" v-if="orderType === 'dine_in'">
+                  <i class="fas fa-users"></i> Capacity: {{ restaurant.capacity }} table(s)
+                </div>
+                <div class="restaurant-delivery" v-if="orderType === 'delivery'">
+                  <i class="fas fa-motorcycle"></i> Delivery Available
                 </div>
               </div>
               <div class="restaurant-card-footer">
@@ -126,7 +161,7 @@
                   @click="bookRestaurant(restaurant)"
                   :disabled="!restaurant.availability"
                 >
-                  {{ buttonText }}
+                  {{ orderType === 'delivery' ? 'Order & Delivery' : 'Order & Book' }}
                 </button>
                 <button class="btn btn-outline-primary btn-sm" @click="viewRestaurantDetails(restaurant)">
                   View Details
@@ -322,6 +357,12 @@ export default {
       dropdownMenu.classList.toggle('show');
     };
     
+    // Set order type
+    const setOrderType = (type) => {
+      orderType.value = type;
+      localStorage.setItem('orderType', type);
+    };
+    
     return {
       user,
       restaurants,
@@ -338,7 +379,8 @@ export default {
       bookRestaurant,
       viewRestaurantDetails,
       logout,
-      toggleDropdown
+      toggleDropdown,
+      setOrderType
     };
   }
 };

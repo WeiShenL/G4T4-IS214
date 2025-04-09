@@ -144,10 +144,11 @@
                     </div>
                     
                     <div class="text-center">
-                      <div v-if="isAccepting" class="d-flex justify-content-center mb-3">
-                        <div class="spinner-border text-primary" role="status">
+                      <div v-if="isAccepting" class="d-flex justify-content-center mb-3 align-items-center">
+                        <div class="spinner-border text-primary me-2" role="status">
                           <span class="visually-hidden">Processing...</span>
                         </div>
+                        <span>Please wait...</span>
                       </div>
                       
                       <button 
