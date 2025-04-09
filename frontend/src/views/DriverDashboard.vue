@@ -189,7 +189,8 @@ export default {
     };
     window.initMap = initMap;
 
-    // fetch
+    // i split the logic to get driver and restaurant locations 
+    // separately so that if no restaurants driver still can see his location on map.
     const fetchDeliveryData = async () => {
       isFetching.value = true;
       try {
@@ -224,6 +225,8 @@ export default {
                 restaurants: []
               }
             };
+            // Show driver location on map
+            showDriverLocationOnMap();
             return;
           }
           
@@ -236,77 +239,8 @@ export default {
         // Store the response data for reuse
         deliveryData.value = data;
         
-        // Check if Google Maps has loaded and map has been initialized
-        if (typeof google === 'undefined' || !map.value) {
-          console.log('Google Maps not yet loaded or map not initialized. Skipping map updates.');
-          return;
-        }
-        
-        // Clear existing markers
-        markers.value.forEach(marker => marker.setMap(null));
-        markers.value = [];
-        
-        // Set driver marker
-        const driverCoords = data.data.driver.location.split(',').map(Number);
-        const driverMarker = new google.maps.Marker({
-          position: { lat: driverCoords[0], lng: driverCoords[1] },
-          map: map.value,
-          icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
-        });
-        markers.value.push(driverMarker);
-        
-        // Set restaurant markers
-        data.data.restaurants.forEach(restaurant => {
-          const coords = restaurant.coordinates.split(',').map(Number);
-          const marker = new google.maps.Marker({
-            position: { lat: coords[0], lng: coords[1] },
-            map: map.value,
-            title: restaurant.name
-          });
-          
-          // Create info window content with select buttons (NEWWWWWWWWWWWWWWW)
-          const content = document.createElement('div');
-          content.className = 'info-window';
-          
-          const title = document.createElement('h4');
-          title.textContent = restaurant.name;
-          content.appendChild(title);
-          
-          const address = document.createElement('p');
-          address.textContent = restaurant.location;
-          content.appendChild(address);
-          
-          const ordersList = document.createElement('ul');
-          restaurant.orders.forEach(order => {
-            const item = document.createElement('li');
-            
-            const orderInfo = document.createElement('div');
-            orderInfo.innerHTML = `${order.item_name} (Order #${order.order_id})<br>
-                                  To: ${order.customer.name} (${order.customer.location})`;
-            item.appendChild(orderInfo);
-            
-            const selectBtn = document.createElement('button');
-            selectBtn.className = 'btn btn-sm btn-primary mt-2';
-            selectBtn.textContent = 'Select';
-            selectBtn.onclick = () => selectOrder(order.order_id); // Just pass order ID
-            item.appendChild(selectBtn);
-            
-            ordersList.appendChild(item);
-          });
-          content.appendChild(ordersList);
-          
-          marker.addListener('click', () => {
-            infoWindow.value.setContent(content);
-            infoWindow.value.open(map.value, marker);
-          });
-          
-          markers.value.push(marker);
-        });
-        
-        // Adjust map bounds
-        const bounds = new google.maps.LatLngBounds();
-        markers.value.forEach(marker => bounds.extend(marker.getPosition()));
-        map.value.fitBounds(bounds);
+        // Update map with all markers (driver and restaurants)
+        updateMapMarkers(data);
         
       } catch (error) {
         console.error('Error fetching delivery data:', error);
@@ -324,12 +258,136 @@ export default {
           };
           // Clear any existing error message
           errorMessage.value = '';
+          
+          // Show driver location on map
+          showDriverLocationOnMap();
         } else {
           // For other errors, show error message
           errorMessage.value = 'Failed to fetch delivery data';
         }
       } finally {
         isFetching.value = false;
+      }
+    };
+
+    // Function to show driver's current location on the map
+    const showDriverLocationOnMap = () => {
+      // Check if Google Maps has loaded and map has been initialized
+      if (typeof google === 'undefined' || !map.value) {
+        console.log('Google Maps not yet loaded or map not initialized. Skipping map updates.');
+        return;
+      }
+      
+      // Clear existing markers (check)
+      markers.value.forEach(marker => marker.setMap(null));
+      markers.value = [];
+      
+      // Get current position using device GPS/location services
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log(`Using current location for map: ${latitude}, ${longitude}`);
+          
+          // Set driver marker
+          const driverMarker = new google.maps.Marker({
+            position: { lat: latitude, lng: longitude },
+            map: map.value,
+            icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+          });
+          markers.value.push(driverMarker);
+          
+          // Center the map on driver's location
+          map.value.setCenter({ lat: latitude, lng: longitude });
+          map.value.setZoom(14);
+        },
+        (error) => {
+          console.error('Error getting current position for map:', error);
+          // Fallback to Singapore center if geolocation fails
+          map.value.setCenter({ lat: 1.3521, lng: 103.8198 });
+          map.value.setZoom(12);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    };
+    
+    // Function to update map with all markers (driver and restaurants)
+    const updateMapMarkers = (data) => {
+      // Check if Google Maps has loaded and map has been initialized
+      if (typeof google === 'undefined' || !map.value) {
+        console.log('Google Maps not yet loaded or map not initialized. Skipping map updates.');
+        return;
+      }
+      
+      // Clear existing markers
+      markers.value.forEach(marker => marker.setMap(null));
+      markers.value = [];
+      
+      // Set driver marker
+      const driverCoords = data.data.driver.location.split(',').map(Number);
+      const driverMarker = new google.maps.Marker({
+        position: { lat: driverCoords[0], lng: driverCoords[1] },
+        map: map.value,
+        icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+      });
+      markers.value.push(driverMarker);
+      
+      // Set restaurant markers
+      data.data.restaurants.forEach(restaurant => {
+        const coords = restaurant.coordinates.split(',').map(Number);
+        const marker = new google.maps.Marker({
+          position: { lat: coords[0], lng: coords[1] },
+          map: map.value,
+          title: restaurant.name
+        });
+        
+        // Create info window content with select buttons
+        const content = document.createElement('div');
+        content.className = 'info-window';
+        
+        const title = document.createElement('h4');
+        title.textContent = restaurant.name;
+        content.appendChild(title);
+        
+        const address = document.createElement('p');
+        address.textContent = restaurant.location;
+        content.appendChild(address);
+        
+        const ordersList = document.createElement('ul');
+        restaurant.orders.forEach(order => {
+          const item = document.createElement('li');
+          
+          const orderInfo = document.createElement('div');
+          orderInfo.innerHTML = `${order.item_name} (Order #${order.order_id})<br>
+                                To: ${order.customer.name} (${order.customer.location})`;
+          item.appendChild(orderInfo);
+          
+          const selectBtn = document.createElement('button');
+          selectBtn.className = 'btn btn-sm btn-primary mt-2';
+          selectBtn.textContent = 'Select';
+          selectBtn.onclick = () => selectOrder(order.order_id); // Just pass order ID
+          item.appendChild(selectBtn);
+          
+          ordersList.appendChild(item);
+        });
+        content.appendChild(ordersList);
+        
+        marker.addListener('click', () => {
+          infoWindow.value.setContent(content);
+          infoWindow.value.open(map.value, marker);
+        });
+        
+        markers.value.push(marker);
+      });
+      
+      // Adjust map bounds if there are markers
+      if (markers.value.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        markers.value.forEach(marker => bounds.extend(marker.getPosition()));
+        map.value.fitBounds(bounds);
       }
     };
 
@@ -467,8 +525,7 @@ export default {
       }
     };
 
-
-    // Function to fetch and send driver location
+    // Function to update driver location and refresh map marker
     const updateDriverLocation = async () => {
       try {
         const driverId = user.value?.id;
@@ -505,6 +562,33 @@ export default {
 
             const data = await response.json();
             console.log("Driver location successfully updated:", data);
+            
+            // Update driver marker on map if map is initialized
+            if (map.value && typeof google !== 'undefined') {
+              // Find the driver marker (it's the one with the green icon)
+              const driverMarker = markers.value.find(marker => 
+                marker.getIcon() === 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+              );
+              
+              // If driver marker exists, update its position
+              if (driverMarker) {
+                const newPosition = new google.maps.LatLng(latitude, longitude);
+                
+                // Animate the marker movement
+                animateMarkerTo(driverMarker, newPosition);
+                console.log("Driver marker position updated on map");
+              } else {
+                // If no driver marker exists, create a new one
+                const newDriverMarker = new google.maps.Marker({
+                  position: { lat: latitude, lng: longitude },
+                  map: map.value,
+                  icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                  animation: google.maps.Animation.DROP
+                });
+                markers.value.push(newDriverMarker);
+                console.log("New driver marker created on map");
+              }
+            }
           },
           (error) => {
             let errorMessage;
@@ -536,7 +620,48 @@ export default {
         errorMessage.value = `Failed to update location: ${err.message}`;
       }
     };
-
+    
+    // Function to animate marker movement between positions
+    const animateMarkerTo = (marker, newPosition) => {
+      const startPosition = marker.getPosition();
+      const startLat = startPosition.lat();
+      const startLng = startPosition.lng();
+      const endLat = newPosition.lat();
+      const endLng = newPosition.lng();
+      
+      // Animation duration in ms
+      const duration = 1000;
+      const fps = 60;
+      const frames = duration / (1000 / fps);
+      let frame = 0;
+      
+      const animateStep = () => {
+        if (frame >= frames) {
+          // Animation complete
+          marker.setPosition(newPosition);
+          return;
+        }
+        
+        frame++;
+        const progress = frame / frames;
+        
+        // Use easeInOut function for smoother motion
+        const easeProgress = progress < 0.5 
+          ? 2 * progress * progress 
+          : -1 + (4 - 2 * progress) * progress;
+          
+        const lat = startLat + (endLat - startLat) * easeProgress;
+        const lng = startLng + (endLng - startLng) * easeProgress;
+        
+        marker.setPosition(new google.maps.LatLng(lat, lng));
+        
+        // Request next animation frame
+        requestAnimationFrame(animateStep);
+      };
+      
+      // Start animation
+      animateStep();
+    };
 
     // Load user data when component mounts
     onMounted(async () => {
@@ -620,8 +745,8 @@ export default {
             
             // tracking live location with device GPS
             updateDriverLocation(); // Immediate first update
-            // Update location more frequently (every 5 minutes) for more accurate tracking
-            setInterval(updateDriverLocation, 5 * 60 * 1000);
+            // Update location every minute for real-time tracking
+            setInterval(updateDriverLocation, 60 * 1000);
           } else {
             console.warn('Map container not available yet, will initialize later');
             // Try again after a short delay to allow the DOM to render
