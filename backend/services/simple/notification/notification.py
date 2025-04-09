@@ -52,9 +52,10 @@ client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # Message templates for different event types
 MESSAGE_TEMPLATES = {
-    #US1 & US2
-    "reservation.cancellation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been canceled and a refund of ${refund_amount} has been processed. We look forward to seeing you again! Thank you!",
+    #US1
     "reservation.confirmation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
+    #US2
+    "reservation.cancellation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been canceled and a refund of ${refund_amount} has been processed. We look forward to seeing you again! Thank you!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process...",
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
     "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
@@ -126,7 +127,7 @@ def rabbitmq_callback(ch, method, properties, body):
         reservation_id = data.get("reservation_id", "N/A")
         refund_amount = data.get("refund_amount", "N/A")
         restaurant_name = data.get("restaurant_name", "The restaurant")
-        booking_time = data.get("booking_time", "N/A"),
+        booking_time = data.get("booking_time", "N/A")
         order_id= data.get("order_id", "N/A")
 
         driver_name = data.get("driver_name", "Driver") 

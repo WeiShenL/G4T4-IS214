@@ -162,8 +162,8 @@ export const acceptReallocation = async (acceptData) => {
       paymentId = order.payment_id;
       price = order.order_price;
     } else {
+      // if no orders found, generate mock data
       console.log('No order found for user, using default values');
-      // Generate mock data if no orders found
       orderId = Math.floor(Math.random() * 1000);
       paymentId = `py_${Date.now()}`;
       price = 0;
