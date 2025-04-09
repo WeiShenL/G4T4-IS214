@@ -35,13 +35,15 @@ def geocode_address(address):
         # Add more hardcoded locations as needed
     }
     
+    # Restrict results to Singapore only (this stupid thing is having seizures every time ffs)
     try:
         print(f"Geocoding address: {address}")
         url = "https://nominatim.openstreetmap.org/search"
         params = {
             "q": address,
             "format": "json",
-            "limit": 1
+            "limit": 1,
+            "countrycodes": "sg"  
         }
         headers = {
             "User-Agent": "FeastFinder/1.0 (your-delivery@example.com)"

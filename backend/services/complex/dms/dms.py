@@ -54,7 +54,19 @@ def get_delivery_management_data():
             return jsonify({"code": 500, "message": "Failed to fetch delivery orders."}), 500
         delivery_orders = order_response.json().get("data", {}).get("orders", [])
         if not delivery_orders:
-            return jsonify({"code": 404, "message": "No delivery orders found."}), 404
+            # Return empty restaurants list with 200 status code instead of 404 error
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "driver": {
+                        "id": driver_id,
+                        "name": driver_data.get("driver_name", "Unknown"),
+                        "location": get_driver_address(driver_id) or "Unknown",
+                        "availability": True
+                    },
+                    "restaurants": []
+                }
+            }), 200
 
         # Group orders by restaurant
         restaurants = {}  # Key: restaurant_id, Value: {restaurant details + orders}

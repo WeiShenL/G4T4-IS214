@@ -213,13 +213,27 @@ export default {
         if (!response.ok) {
           const text = await response.text();
           console.error('🚨 Non‑2xx response body:', text);
+          
+          // means no order found.
+          if (response.status === 404) {
+            // Set empty data structure instead of error
+            deliveryData.value = {
+              code: 200,
+              data: {
+                driver: user.value,
+                restaurants: []
+              }
+            };
+            return;
+          }
+          
           throw new Error(`HTTP ${response.status}`);
         }
         
         const data = await response.json();
         console.log('👉 JSON payload:', data);
 
-        // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
+        // Store the response data for reuse
         deliveryData.value = data;
         
         // Check if Google Maps has loaded and map has been initialized
@@ -296,7 +310,24 @@ export default {
         
       } catch (error) {
         console.error('Error fetching delivery data:', error);
-        errorMessage.value = 'Failed to fetch delivery data';
+        
+        // this error happens when there is no order. Handle error gracefully ba.
+        if (error.message && error.message.includes("HTTP 500")) {
+          console.log("Setting empty deliveries structure instead of showing error");
+          // no orders found.
+          deliveryData.value = {
+            code: 200,
+            data: {
+              driver: user.value,
+              restaurants: []
+            }
+          };
+          // Clear any existing error message
+          errorMessage.value = '';
+        } else {
+          // For other errors, show error message
+          errorMessage.value = 'Failed to fetch delivery data';
+        }
       } finally {
         isFetching.value = false;
       }
