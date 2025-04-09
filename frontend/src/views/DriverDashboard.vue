@@ -194,10 +194,30 @@ export default {
       isFetching.value = true;
       try {
         const driverId = user.value?.id;
-        const url = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
-        console.log('👉 Fetching:', url);
+        if (!driverId) {
+          throw new Error("Driver ID not available.");
+        }
+
+        // 1. Update driver's live location first
+        const proxyUrl = `http://localhost:5012/proxy-geolocation/${driverId}`;
+        console.log('📍 Updating location via:', proxyUrl);
+        const proxyResponse = await fetch(proxyUrl, { method: 'POST' });
+        if (!proxyResponse.ok) {
+          const proxyErrorText = await proxyResponse.text();
+          console.error('🚨 Failed to update location:', proxyErrorText);
+          // Decide if you want to stop here or continue with potentially stale data
+          // For now, let's throw an error to make it clear
+          throw new Error(`Failed to update location: ${proxyResponse.status}`);
+        }
+        const locationUpdateResult = await proxyResponse.json();
+        console.log('✅ Location updated successfully:', locationUpdateResult);
+
+
+        // 2. Now fetch the delivery management data (which should use the updated location)
+        const deliveryUrl = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
+        console.log('👉 Fetching delivery data:', deliveryUrl);
         
-        const response = await fetch(url);
+        const response = await fetch(deliveryUrl);
         console.log('👉 Status:', response.status, 'OK?', response.ok);
         
         // If it's not a 2xx, throw so you hit your catch:
@@ -210,7 +230,7 @@ export default {
         const data = await response.json();
         console.log('👉 JSON payload:', data);
 
-        // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
+        // Store the response data for reuse
         deliveryData.value = data;
         
         // Check if Google Maps has loaded and map has been initialized
