@@ -336,6 +336,12 @@ export default {
         
         // Load user data
         await loadUserData();
+
+        // only need know address if its delivery type
+        const storedOrderType = localStorage.getItem('orderType');
+        if (storedOrderType === 'delivery') {
+          await loadDeliveryAddressDetails();
+        }
         
         // Set default reservation time
         setDefaultReservationTime();
@@ -382,6 +388,30 @@ export default {
       } catch (error) {
         console.error('Error loading user data:', error);
         throw error;
+      }
+    };
+
+    // Load delivery address details, based on user id alr have
+    const loadDeliveryAddressDetails = async () => {
+      const storedOrderType = localStorage.getItem('orderType');
+      if (storedOrderType === 'delivery' && user.value && user.value.id) {
+        try {
+          // Call the user msc to get address details
+          const response = await fetch(`http://localhost:5000/api/user/${user.value.id}`);
+          const userData = await response.json();
+          
+          if (userData.code === 200 && userData.data) {
+            // Update user with address details
+            user.value = {
+              ...user.value,
+              streetAddress: userData.data.street_address,
+              postalCode: userData.data.postal_code,
+              phoneNumber: userData.data.phone_number
+            };
+          }
+        } catch (error) {
+          console.error('Error loading delivery address:', error);
+        }
       }
     };
     
@@ -531,7 +561,7 @@ export default {
         };
 
         console.log('Creating booking with data:', bookingData);
-        const bookingResponse = await fetch('http://localhost:5007/create', {
+        const bookingResponse = await fetch('http://localhost:5006/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
