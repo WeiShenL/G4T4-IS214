@@ -382,10 +382,31 @@ export default {
       
       const driverId = routingData.value.driver.id;
       
-      // First, delete the geospatial data (to handle foreign key constraint)
-      fetch(`http://localhost:7000/delete-geospatial/${orderId}`, {
-        method: 'DELETE'
+      // 1. First, update driver stats through deliver-order API
+      fetch('http://localhost:5101/deliver-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_id: driverId,
+          order_id: orderId
+        })
       })
+        .then((res) => {
+          // Check if the response is JSON
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return res.json();
+          }
+          return res.ok ? {} : Promise.reject('Failed to update driver stats');
+        })
+        .then((data) => {
+          console.log('Order delivered successfully, driver stats updated:', data);
+          
+          // 2. Then delete the geospatial data
+          return fetch(`http://localhost:7000/delete-geospatial/${orderId}`, {
+            method: 'DELETE'
+          });
+        })
         .then((res) => {
           // Check if the response is JSON
           const contentType = res.headers.get('content-type');
@@ -397,9 +418,9 @@ export default {
         .then((data) => {
           console.log('Geospatial data deleted:', data);
           
-          // Then, delete the order completely (instead of updating status)
+          // 3. Finally, delete the order completely
           return fetch(`http://localhost:5004/api/orders/${orderId}`, {
-            method: 'DELETE'  // Changed to DELETE to remove the order
+            method: 'DELETE'
           });
         })
         .then((res) => {
@@ -412,27 +433,6 @@ export default {
         })
         .then((data) => {
           console.log('Order deleted:', data);
-          
-          // Finally, update driver stats through deliver-order API
-          return fetch('http://localhost:5101/deliver-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              driver_id: driverId,
-              order_id: orderId  // Still pass the order ID for reference/logging
-            })
-          });
-        })
-        .then((res) => {
-          // Check if the response is JSON
-          const contentType = res.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            return res.json();
-          }
-          return res.ok ? {} : Promise.reject('Failed to update driver stats');
-        })
-        .then((data) => {
-          console.log('Order delivered successfully, driver stats updated:', data);
         })
         .catch((err) => {
           console.error('Error in order completion process:', err);
@@ -440,9 +440,9 @@ export default {
         });
     };
 
-    const goHome = () => {
-      router.back();  // Navigate back to the previous page
-    };
+        const goHome = () => {
+          router.back();  // Navigate back to the previous page
+        };
 
 
     onMounted(() => {
