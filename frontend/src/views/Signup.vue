@@ -145,20 +145,7 @@
             </span>
           </button>
         </form>
-        
-        <div class="divider">
-          <span>or sign up with</span>
-        </div>
-        
-        <div class="social-login">
-          <a href="#" class="social-btn" @click.prevent="socialSignup('google')">
-            <i class="fab fa-google"></i> Google
-          </a>
-          <a href="#" class="social-btn" @click.prevent="socialSignup('facebook')">
-            <i class="fab fa-facebook-f"></i> Facebook
-          </a>
-        </div>
-        
+      
         <div class="signup-link">
           Already have an account? <router-link to="/login">Log in</router-link>
         </div>
@@ -273,10 +260,6 @@ export default {
         isLoading.value = false;
       }
     };
-  
-    const socialSignup = (provider) => {
-      alert(`Social signup with ${provider} will be implemented in a future update.`);
-    };
     
     return {
       name,
@@ -293,7 +276,6 @@ export default {
       isLoading,
       togglePassword,
       signup,
-      socialSignup
     };
   }
 };
