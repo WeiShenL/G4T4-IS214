@@ -39,7 +39,7 @@ def get_restaurant_menu(restaurant_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
 
-# get a specific menu item by ID
+# get a specific menu item by ID --> NOT USED AS OF NOW
 @app.route("/api/menu/item/<int:menu_id>", methods=['GET'])
 def get_menu_item(menu_id):
     try:

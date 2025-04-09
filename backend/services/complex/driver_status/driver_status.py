@@ -23,7 +23,7 @@ DRIVER_SERVICE_URL = os.environ.get("DRIVER_SERVICE_URL", "http://driver-service
 DRIVER_DETAILS_SERVICE_URL = os.environ.get("DRIVER_DETAILS_SERVICE_URL", "http://driver-details-service:5012")
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):

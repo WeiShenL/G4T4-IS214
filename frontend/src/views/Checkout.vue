@@ -561,7 +561,7 @@ export default {
         };
 
         console.log('Creating booking with data:', bookingData);
-        const bookingResponse = await fetch('http://localhost:5006/create', {
+        const bookingResponse = await fetch('http://localhost:5007/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

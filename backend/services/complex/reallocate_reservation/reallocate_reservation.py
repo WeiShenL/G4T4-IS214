@@ -1,14 +1,13 @@
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
 import json
 import time
 import requests
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pika
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # RabbitMQ configuration
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
@@ -22,6 +21,7 @@ RESERVATION_SERVICE_URL = os.environ.get("RESERVATION_SERVICE_URL", "http://rese
 ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5000")
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):

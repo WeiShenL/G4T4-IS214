@@ -1,6 +1,4 @@
 import os
-
-# Standard imports
 import json
 import threading
 import pika
@@ -25,7 +23,7 @@ RABBITMQ_EXCHANGE_TYPE = "topic"
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Supabase configuration
 supabase_url = os.getenv('SUPABASE_URL')
@@ -50,7 +48,7 @@ MESSAGE_TEMPLATES = {
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
     "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
     #US3
-    "delivery.order.confirmation": "Hi there {user_name}! Your order (ID: {order_id}) has been confirmed for delivery. Thank you for ordering with us!",
+    "delivery.order.confirmation": "Hi there {username}! Your order (ID: {order_id}) has been confirmed for delivery. Thank you for ordering with us!",
     "delivery.order.accepted": "Hi there {customer_name}! Your order (ID: {order_id}) has been assigned a driver, {driver_name}. Thank you for ordering with us!",
     "delivery.order.pickedup": "Good news {customer_name}! Your order (ID: {order_id}) has been picked up by your allocated driver. {driver_name} is on the way!",
     "delivery.order.delivered": "Hello {customer_name}! Your order (ID: {order_id}) has been delivered. Thank you for your purchase and we hope to see you soon!"
