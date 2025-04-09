@@ -73,9 +73,16 @@ def reallocate_reservation():
             waitlist_data = waitlist_response.json()
             user_id = waitlist_data.get("user_id")
             
-            if not user_id:
-                print("No users found in waitlist")
-                return jsonify({"message": "No users in waitlist"}), 404
+            if not user_id or user_id=="0":
+                try: 
+                 delete_response = requests.delete(f"http://localhost:5002/api/reservations/delete/{reservation_id}")
+                 delete_response.raise_for_status()
+                 print(f"Reservation {reservation_id} successfully deleted.")
+                except requests.exceptions.RequestException as e:
+                    print(f"Failed to delete reservation {reservation_id}: {str(e)}")
+                    return jsonify({"error": f"Failed to delete reservation: {str(e)}"}), 500
+
+            return jsonify({"message": "No users in waitlist. Reservation deleted."}), 200
                 
             print(f"Next user from waitlist: {user_id}")
         except requests.exceptions.RequestException as e:

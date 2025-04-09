@@ -115,6 +115,38 @@ def create_reservation():
             "message": f"An error occurred: {str(e)}"
         }), 500
 
+# Delete a reservation by reservation_id
+@app.route('/api/reservations/delete/<int:reservation_id>', methods=['DELETE'])
+def delete_reservation(reservation_id):
+    try:
+        # Check if reservation exists
+        response = supabase.table('reservation').select('*').eq('reservation_id', reservation_id).execute()
+        if not response.data:
+            return jsonify({
+                "code": 404,
+                "message": f"Reservation with ID {reservation_id} not found."
+            }), 404
+
+        # Perform the deletion
+        delete_response = supabase.table('reservation').delete().eq('reservation_id', reservation_id).execute()
+        
+        if delete_response.data:
+            return jsonify({
+                "code": 200,
+                "message": f"Reservation with ID {reservation_id} deleted successfully."
+            }), 200
+        else:
+            return jsonify({
+                "code": 500,
+                "message": "Failed to delete reservation."
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
 # Get reservations by user_id
 @app.route("/api/reservations/user/<string:user_id>", methods=['GET'])
 def get_user_reservations(user_id):
