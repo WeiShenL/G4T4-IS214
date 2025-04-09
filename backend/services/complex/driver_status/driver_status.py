@@ -11,73 +11,49 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pika
 
-from backend.rabbitmq.amqp_lib import connect, is_connection_open
-from backend.rabbitmq.amqp_setup import (
-    amqp_host, 
-    amqp_port, 
-    exchange_name, 
-    exchange_type
-)
+# RabbitMQ configuration
+RABBITMQ_HOST = "localhost"
+RABBITMQ_PORT = 5672
+RABBITMQ_EXCHANGE = "notification_topic"
+RABBITMQ_EXCHANGE_TYPE = "topic"
 
 app = Flask(__name__)
 CORS(app)
 
-connection = None
-channel = None
-
-# Connect to RabbitMQ
-def connectAMQP():
-    global connection, channel
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            if connection is None or not is_connection_open(connection):
-                print("  Connecting to AMQP broker...")
-                connection, channel = connect(
-                    hostname=amqp_host,
-                    port=amqp_port,
-                    exchange_name=exchange_name,
-                    exchange_type=exchange_type,
-                )
-            return True
-        except Exception as e:
-            print(f"  Attempt {attempt+1}/{max_retries}: Unable to connect to RabbitMQ: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(2)
-            else:
-                print("  Max retries reached, continuing operation...")
-                return False
-
 # Publish message to RabbitMQ
-def publish_message(routing_key, message):
-    global connection, channel
-    
-    # Try up to 3 times to publish the message
-    for attempt in range(3):
-        try:
-            # Check connection and try to reconnect if needed
-            if connection is None or not is_connection_open(connection):
-                connected = connectAMQP()
-                if not connected:
-                    print("  Could not connect to RabbitMQ, will try again...")
-                    time.sleep(1)
-                    continue
-            
-            message_json = json.dumps(message)
-            channel.basic_publish(
-                exchange=exchange_name,
-                routing_key=routing_key,
-                body=message_json
+def publish_to_rabbitmq(routing_key, message):
+    """Publish a message to RabbitMQ"""
+    try:
+        # Connect to RabbitMQ
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT
             )
-            print(f"  Published message to {routing_key}: {message_json}")
-            return True
-        except Exception as e:
-            print(f"  Error publishing message (attempt {attempt+1}/3): {e}")
-            connection = None  # Reset connection to force reconnect
-            time.sleep(1)
-    
-    print("  Failed to publish message after multiple attempts")
-    return False
+        )
+        channel = connection.channel()
+        
+        # Ensure exchange exists
+        channel.exchange_declare(
+            exchange=RABBITMQ_EXCHANGE,
+            exchange_type=RABBITMQ_EXCHANGE_TYPE,
+            durable=True
+        )
+        
+        # Publish message
+        channel.basic_publish(
+            exchange=RABBITMQ_EXCHANGE,
+            routing_key=routing_key,
+            body=json.dumps(message)
+        )
+        
+        # Close connection
+        connection.close()
+        print(f"Published message to {routing_key}: {json.dumps(message)}")
+        return True
+    except Exception as e:
+        print(f"Error publishing to RabbitMQ: {e}")
+        return False
 
 @app.route("/accept-order", methods=['POST'])
 def accept_order():
@@ -134,7 +110,7 @@ def accept_order():
             "customer_name": customer_name,
             "message_type": "delivery.order.accepted",
         }
-        publish_message("delivery.order.accepted", message)
+        publish_to_rabbitmq("delivery.order.accepted", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order accepted successfully."}), 200
@@ -191,7 +167,7 @@ def pick_up_order():
             "customer_name": customer_name,
             "message_type": "delivery.order.pickedup",
         }
-        publish_message("delivery.order.pickedup", message)
+        publish_to_rabbitmq("delivery.order.pickedup", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order pickedup successfully."}), 200
@@ -267,7 +243,7 @@ def deliver_order():
             "customer_name": customer_name,
             "message_type": "delivery.order.delivered",
         }
-        publish_message("delivery.order.delivered", message)
+        publish_to_rabbitmq("delivery.order.delivered", message)
 
         # Return success response
         return jsonify({"code": 200, "message": "Order delivered successfully."}), 200
@@ -309,5 +285,5 @@ def deliver_order():
 #         }), 500
 
 if __name__ == '__main__':
-    print("Starting Driverstatus Service...")
+    print("Starting driver_status service...")
     app.run(host='0.0.0.0', port=5101, debug=True)

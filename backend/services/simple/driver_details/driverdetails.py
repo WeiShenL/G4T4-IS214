@@ -194,56 +194,56 @@ def update_delivery_completion(driver_id):
                 "message": f"An error occurred while updating driver delivery stats: {str(e)}"
             }
         ), 500
-    
-# update live location
-@app.route("/proxy-geolocation/<uuid:driver_id>", methods=['POST'])
-def proxy_geolocation(driver_id):
+
+# update live location directly using GPS coordinates from the browser (finally...)
+@app.route("/driverdetails/<uuid:driver_id>/location", methods=['PATCH'])
+def update_driver_location(driver_id):
     """
-    Proxy requests to Google Geolocation API to avoid CORS issues
+    Update driver's location directly using GPS coordinates from the browser
     """
     try:
-        # API key from .env
-        google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
+        # Convert driver_id to string (required for Supabase queries)
+        driver_id_str = str(driver_id)
         
-        url = f"https://www.googleapis.com/geolocation/v1/geolocate?key={google_maps_api_key}"
+        # Parse the request body
+        data = request.json
+        location = data.get("location")
+        accuracy = data.get("accuracy")
         
-        # Forward the request to Google - which requires POST
-        response = requests.post(url, json={"considerIp": True})
-        
-        if response.ok:
-            location_data = response.json()
-            
-            # Now update your driver's location with the result
-            driver_id_str = str(driver_id)
-            location_str = f"{location_data['location']['lat']},{location_data['location']['lng']}"
-            
-            # Update driver location in your database
-            update_response = supabase.table("driverdetails").update({
-                "live_location": location_str
-            }).eq("driver_id", driver_id_str).execute()
-            
+        if not location:
             return jsonify({
-                "code": 200,
-                "message": "Driver location updated successfully.",
-                "data": {
-                    "location": location_data['location'],
-                    "accuracy": location_data.get('accuracy')
-                }
-            }), 200
-        else:
+                "code": 400,
+                "message": "Missing 'location' field in request body."
+            }), 400
+        
+        # Update driver location in database
+        update_response = supabase.table("driverdetails").update({
+            "live_location": location
+        }).eq("driver_id", driver_id_str).execute()
+        
+        # Check if the update was successful
+        if not update_response.data:
             return jsonify({
-                "code": response.status_code,
-                "message": "Error from Google Geolocation API"
-            }), response.status_code
-    
+                "code": 404,
+                "message": f"Driver with ID {driver_id_str} not found or no rows updated."
+            }), 404
+        
+        # Return success response
+        return jsonify({
+            "code": 200,
+            "message": "Driver location updated successfully using device GPS.",
+            "data": {
+                "location": location,
+                "accuracy": accuracy
+            }
+        }), 200
+        
     except Exception as e:
-        print(f"Error in geolocation proxy: {str(e)}")
+        print(f"Error updating driver location: {str(e)}")
         return jsonify({
             "code": 500,
-            "message": f"An error occurred: {str(e)}"
+            "message": f"An error occurred while updating driver location: {str(e)}"
         }), 500
-
-
 
 # Main entry point
 if __name__ == '__main__':

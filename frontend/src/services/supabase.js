@@ -85,10 +85,13 @@ export const signUp = async (email, password, userData) => {
 };
 
 // Sign in
-export const signIn = async (email, password) => {
+export const signIn = async (email, password, rememberMe = false) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password
+    password,
+    options: {
+      persistSession: rememberMe
+    }
   });
   
   if (error) {

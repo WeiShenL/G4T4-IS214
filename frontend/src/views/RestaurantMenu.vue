@@ -35,6 +35,15 @@
               <div class="welcome-card">
                 <h2>{{ restaurant ? restaurant.name : 'Restaurant' }} Menu</h2>
                 <p>Select an item you'd like to order</p>
+                
+                <!-- Order Type Indicator -->
+                <div class="order-type-indicator mt-3">
+                  <div class="alert" :class="orderType === 'delivery' ? 'alert-info' : 'alert-success'">
+                    <i :class="['fas', orderType === 'delivery' ? 'fa-motorcycle' : 'fa-utensils', 'me-2']"></i>
+                    <strong>{{ orderType === 'delivery' ? 'Delivery Mode' : 'Dine In Mode' }}:</strong> 
+                    {{ orderType === 'delivery' ? 'Your order will be delivered to your address.' : 'You can book a table and dine at the restaurant.' }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -173,6 +182,7 @@
       const quantity = ref(1);
       const isLoading = ref(true);
       const errorMessage = ref('');
+      const orderType = ref('dine_in'); // Default to dine_in
       
       // get restaurant ID from route params
       const restaurantId = parseInt(route.params.id);
@@ -183,6 +193,12 @@
           // Make sure we have a valid restaurant ID
           if (!restaurantId || isNaN(restaurantId)) {
             throw new Error('Invalid restaurant ID');
+          }
+          
+          // Get order type from localStorage
+          const storedOrderType = localStorage.getItem('orderType');
+          if (storedOrderType) {
+            orderType.value = storedOrderType;
           }
           
           // Load user data
@@ -320,6 +336,7 @@
         quantity,
         isLoading,
         errorMessage,
+        orderType,
         selectItem,
         increaseQuantity,
         decreaseQuantity,

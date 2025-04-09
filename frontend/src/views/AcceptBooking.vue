@@ -144,10 +144,11 @@
                     </div>
                     
                     <div class="text-center">
-                      <div v-if="isAccepting" class="d-flex justify-content-center mb-3">
-                        <div class="spinner-border text-primary" role="status">
+                      <div v-if="isAccepting" class="d-flex justify-content-center mb-3 align-items-center">
+                        <div class="spinner-border text-primary me-2" role="status">
                           <span class="visually-hidden">Processing...</span>
                         </div>
+                        <span>Please wait...</span>
                       </div>
                       
                       <button 
@@ -389,9 +390,9 @@
           // Clear the pending reservation from localStorage
           localStorage.removeItem('pendingReservation');
           
-          // Redirect to dashboard after 3 seconds
+          // Redirect to reservations after 3 seconds (not dashboard bruhh)
           setTimeout(() => {
-            router.push('/customer-dashboard');
+            router.push('/reservations');
           }, 3000);
           
         } catch (error) {

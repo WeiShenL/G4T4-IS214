@@ -164,7 +164,7 @@ export default {
         console.log('Attempting login with:', email.value, password.value);
         
         // Sign in with Supabase
-        const { data, error } = await signIn(email.value, password.value);
+        const { data, error } = await signIn(email.value, password.value, rememberMe.value);
         
         if (error) throw error;
         

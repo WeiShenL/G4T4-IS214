@@ -15,15 +15,6 @@
               <router-link class="nav-link" to="/">Home</router-link>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Restaurants</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Contact</a>
-            </li>
-            <li class="nav-item">
               <router-link class="nav-link btn-login" to="/login">Login</router-link>
             </li>
             <li class="nav-item">
@@ -194,9 +185,9 @@ export default {
           description: 'Easily select from our list of local restaurants to satisfy your craving.'
         },
         {
-          icon: 'fas fa-truck',
-          title: 'Fast Delivery',
-          description: 'Our efficient delivery network ensures your food arrives hot and fresh in record time.'
+          icon: 'fas fa-undo',
+          title: 'Easy Cancellation & Refund',
+          description: 'Hassle-free cancellation process with quick refunds to ensure customer satisfaction.'
         },
         {
           icon: 'fas fa-mobile-alt',
@@ -205,18 +196,18 @@ export default {
         },
         {
           icon: 'fas fa-calendar-check',
-          title: 'Table Reservations',
-          description: 'Book a table at your favorite restaurant directly through our platform with instant confirmation.'
+          title: 'Table Reservations & Pre-Order',
+          description: 'Book a table and pre-order your meals to have everything ready when you arrive.'
         },
         {
-          icon: 'fas fa-clock',
-          title: 'Pre-Order Food',
-          description: 'Schedule your orders in advance to have your meals ready exactly when you want them.'
+          icon: 'fas fa-shopping-bag',
+          title: 'Food Delivery Orders',
+          description: 'Get your favorite meals delivered right to your doorstep with our reliable delivery service.'
         },
         {
-          icon: 'fas fa-map-marked-alt',
-          title: 'Real-Time Tracking',
-          description: 'Follow your delivery in real-time and know exactly when your food will arrive at your doorstep.'
+          icon: 'fas fa-bell',
+          title: 'SMS Notifications',
+          description: 'Receive real-time update notifications about your order status directly on your device.'
         }
       ],
       customerSteps: [
@@ -225,34 +216,34 @@ export default {
           description: 'Explore local restaurants and view their menus'
         },
         {
-          title: 'Place Your Order',
-          description: 'Select your favorite dishes and customize as needed'
+          title: 'Place Order for Delivery or Dine-in',
+          description: 'Select your favorite dishes for dine-in or delivery'
         },
         {
-          title: 'Track Delivery',
-          description: 'Follow your order in real-time from kitchen to doorstep'
+          title: 'Stay Updated',
+          description: 'Receive notifications and updates about your order or reservation status'
         },
         {
           title: 'Enjoy Your Meal',
-          description: 'Rate your experience and earn rewards'
+          description: ''
         }
       ],
       driverSteps: [
         {
           title: 'Sign Up',
-          description: 'Create your account and complete verification'
-        },
-        {
-          title: 'Set Your Schedule',
-          description: 'Choose when you want to work - full flexibility'
+          description: 'Create your account'
         },
         {
           title: 'Accept Orders',
           description: 'Receive nearby delivery requests and choose which to accept'
         },
         {
-          title: 'Get Paid',
-          description: 'Earn competitive rates plus tips and bonuses'
+          title: 'Set Your Schedule',
+          description: 'Choose when you want to work - full flexibility'
+        },
+        {
+          title: 'Get Paid!',
+          description: ''
         }
       ]
     };

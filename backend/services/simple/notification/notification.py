@@ -17,17 +17,11 @@ from twilio.rest import Client
 from datetime import datetime
 from supabase import create_client, Client as SupabaseClient
 
-# Import your RabbitMQ setup modules
-from backend.rabbitmq.amqp_setup import (
-    amqp_host,
-    amqp_port,
-    exchange_name,
-    exchange_type,
-)
-from backend.rabbitmq.amqp_lib import connect, is_connection_open
-
-import backend.rabbitmq.amqp_setup as rabbitmq_setup
-import backend.rabbitmq.amqp_lib as rabbitmq_lib
+# RabbitMQ configuration
+RABBITMQ_HOST = "localhost"
+RABBITMQ_PORT = 5672
+RABBITMQ_EXCHANGE = "notification_topic"
+RABBITMQ_EXCHANGE_TYPE = "topic"
 
 # Load environment variables
 load_dotenv()
@@ -174,16 +168,42 @@ def rabbitmq_callback(ch, method, properties, body):
     except Exception as e:
         logging.error(f"Error processing RabbitMQ message: {e}")
 
+# Connect to RabbitMQ
+def connect_to_rabbitmq():
+    """Connect to RabbitMQ and return connection and channel"""
+    try:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT,
+                heartbeat=300,
+                blocked_connection_timeout=300
+            )
+        )
+        channel = connection.channel()
+        
+        # Ensure exchange exists
+        channel.exchange_declare(
+            exchange=RABBITMQ_EXCHANGE,
+            exchange_type=RABBITMQ_EXCHANGE_TYPE,
+            durable=True
+        )
+        
+        return connection, channel
+    except Exception as e:
+        logging.error(f"Error connecting to RabbitMQ: {e}")
+        return None, None
+
 def start_rabbitmq_consumer():
     while True:
         try:
             logging.info("Connecting to RabbitMQ...")
-            connection, channel = rabbitmq_lib.connect(
-                hostname=rabbitmq_setup.amqp_host,
-                port=rabbitmq_setup.amqp_port,
-                exchange_name=rabbitmq_setup.exchange_name,
-                exchange_type=rabbitmq_setup.exchange_type,
-            )
+            connection, channel = connect_to_rabbitmq()
+            
+            if not connection or not channel:
+                logging.error("Failed to connect to RabbitMQ. Retrying in 5 seconds...")
+                time.sleep(5)
+                continue
 
             queues = {
                 "Order_Confirmation": "order.confirmation",
@@ -202,7 +222,7 @@ def start_rabbitmq_consumer():
                 logging.info(f"Consuming from queue: {queue_name}")
                 channel.queue_declare(queue=queue_name, durable=True)
                 channel.queue_bind(
-                    exchange=rabbitmq_setup.exchange_name,
+                    exchange=RABBITMQ_EXCHANGE,
                     queue=queue_name,
                     routing_key=routing_key,
                 )
