@@ -22,9 +22,8 @@
                 <span v-else>Loading...</span>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <!-- reservation pg-->
-                <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-receipt"></i> My Orders</router-link></li>
                 <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-calendar-check"></i> My Reservations</router-link></li>
+                <li><router-link class="dropdown-item" to="/delivery-orders"><i class="fas fa-truck"></i> My Delivery Orders</router-link></li>
                 <li v-if="hasPendingReservation"><router-link class="dropdown-item text-warning" to="/accept-booking"><i class="fas fa-bell"></i> Pending Table Offer</router-link></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" @click.prevent="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -136,7 +135,6 @@ export default {
         link: '/reservations',
         linkText: 'See Table Bookings'
       },
-      // yet to change link
       {
         icon: 'fas fa-utensils',
         title: 'Order Food for Delivery',
@@ -144,11 +142,10 @@ export default {
         linkText: 'Browse Restaurants',
         orderType: () => setOrderType('delivery')
       },
-      // yet to change link
       {
-        icon: 'fas fa-list-alt',
+        icon: 'fas fa-truck',
         title: 'View My Home Delivery Orders',
-        link: '/reservations',
+        link: '/delivery-orders',
         linkText: 'See Delivery Orders'
       }
     ];

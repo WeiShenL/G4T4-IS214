@@ -22,6 +22,7 @@ ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:50
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
     """Publish a message to RabbitMQ"""
