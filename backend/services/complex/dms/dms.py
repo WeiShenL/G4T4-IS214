@@ -10,19 +10,19 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Base URLs for the services
-ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5004')
-DRIVER_SERVICE_URL = os.getenv('DRIVER_SERVICE_URL', 'http://localhost:5011')
-USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5000')
-RESTAURANT_SERVICE_URL = os.getenv('RESTAURANT_SERVICE_URL', 'http://localhost:5001')
-DRIVERDETAIL_SERVICE_URL = os.getenv('DRIVERDETAIL_SERVICE_URL', 'http://localhost:5012')
-GEOCODING_SERVICE_URL = os.getenv('GEOCODING_SERVICE_URL', 'http://localhost:5013')
+ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://order-service:5000')
+DRIVER_SERVICE_URL = os.getenv('DRIVER_SERVICE_URL', 'http://driver-service:5000')
+USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://user-service:5000')
+RESTAURANT_SERVICE_URL = os.getenv('RESTAURANT_SERVICE_URL', 'http://restaurant-service:5000')
+DRIVERDETAIL_SERVICE_URL = os.getenv('DRIVERDETAIL_SERVICE_URL', 'http://driver-details-service:5000')
+GEOCODING_SERVICE_URL = os.getenv('GEOCODING_SERVICE_URL', 'http://geo-service:5000')
 
 def get_driver_address(driver_id):
     #Fetch the driver's address from the DRIVER_SERVICE_URL.
     #:param driver_id: The ID of the driver.
     #:return: The driver's address (string) or None if not found.
     try:
-        driver_response = requests.get(f"{os.getenv('DRIVER_SERVICE_URL', 'http://localhost:5011')}/driver/{driver_id}")
+        driver_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
         if driver_response.status_code == 200:
             driver_data = driver_response.json().get("data", {})
             return driver_data.get("street_address", None)  # key for the driver's address
@@ -181,7 +181,6 @@ def get_delivery_management_data():
         return jsonify({"code": 500, "message": "An error occurred while fetching data."}), 500
 
 if __name__ == '__main__':
-    print("Starting Delivery Management Service...")
-    app.run(host='0.0.0.0', port=5014, debug=True)
-
-
+    port = int(os.environ.get('PORT', 5014))
+    print(f"Starting Delivery Management Service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)

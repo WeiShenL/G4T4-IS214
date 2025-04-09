@@ -4,12 +4,25 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pika
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_EXCHANGE = "notification_topic"
 RABBITMQ_EXCHANGE_TYPE = "topic"
+
+# Service URLs
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000")
+RESERVATION_SERVICE_URL = os.environ.get("RESERVATION_SERVICE_URL", "http://reservation-service:5000")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5000")
+PAYMENT_SERVICE_URL = os.environ.get("PAYMENT_SERVICE_URL", "http://payment-service:5000")
+NOTIFICATION_SERVICE_URL = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:5000")
+REALLOCATE_RESERVATION_SERVICE_URL = os.environ.get("REALLOCATE_RESERVATION_SERVICE_URL", "http://reallocate-reservation-service:5000")
 
 app = Flask(__name__)
 CORS(app)
@@ -56,7 +69,7 @@ def process_cancellation(reservation_id):
     try:
         # Use the reservation API endpoint in your application
         reservation_response = requests.patch(
-            f"http://localhost:5002/api/reservation/cancel/{reservation_id}"
+            f"{RESERVATION_SERVICE_URL}/api/reservation/cancel/{reservation_id}"
         )
         reservation_response.raise_for_status()
         reservation_data = reservation_response.json()
@@ -79,7 +92,7 @@ def process_cancellation(reservation_id):
     # Get user details from customer_profiles table
     try:
         # Using our user service
-        user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+        user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
         user_response.raise_for_status()
         user_data = user_response.json()
         print(f"User data received: {user_data}")
@@ -92,13 +105,12 @@ def process_cancellation(reservation_id):
         print(f"Failed to fetch user details: {str(e)}")
         return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
-    # TODO:Process refund if payment_id exists (exist where?) exit from reservation table as above?
-    # i call the payment msc
+    # Process refund if payment_id exists
     if payment_id:
         try:
             # Call the payment service to process the refund
             refund_response = requests.post(
-                "http://localhost:5006/api/payment/refund",
+                f"{PAYMENT_SERVICE_URL}/api/payment/refund",
                 json={"payment_id": payment_id}
             )
             refund_response.raise_for_status()
@@ -109,7 +121,7 @@ def process_cancellation(reservation_id):
             if order_id:
                 # Delete by order_id if available (new method)
                 delete_order_response = requests.delete(
-                    f"http://localhost:5004/api/orders/{order_id}"
+                    f"{ORDER_SERVICE_URL}/api/orders/{order_id}"
                 )
                 if delete_order_response.status_code == 200:
                     print(f"Order with ID {order_id} deleted successfully")
@@ -129,7 +141,7 @@ def process_cancellation(reservation_id):
             "user_phone": user_phone,
             "table_no": table_no,
             "refund_amount": refund_amount,
-            "payment_id": payment_id,  # Include payment_id for the UI to process the refund
+            "payment_id": payment_id,
             "message_type": "reservation.cancellation"
         }
         
@@ -137,7 +149,7 @@ def process_cancellation(reservation_id):
         
         # Trigger reallocation
         reallocation_data = {"reservation_id": reservation_id, "restaurant_id": restaurant_id}
-        requests.post("http://localhost:5009/reallocate", json=reallocation_data)
+        requests.post(f"{REALLOCATE_RESERVATION_SERVICE_URL}/reallocate", json=reallocation_data)
         
         return jsonify({
             "message": "Reservation cancelled and notification sent, and reallocation triggered.",
@@ -150,5 +162,6 @@ def process_cancellation(reservation_id):
         return jsonify({"error": f"Error triggering notification or reallocation: {str(e)}"}), 500
     
 if __name__ == '__main__':
-    print("Starting cancel_booking service...")
-    app.run(host='0.0.0.0', port=5008, debug=True)
+    port = int(os.environ.get('PORT', 5008))
+    print(f"Starting cancel_booking service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)

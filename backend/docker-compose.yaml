@@ -158,6 +158,193 @@ services:
     networks:
       - feastfinder-network
 
+  # User Scenario 2 Services are hereeee (composites)
+  
+  accept-booking-service:
+    build: ./services/complex/accept_booking
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      reservation-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      restaurant-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PORT=5000
+      - USER_SERVICE_URL=http://user-service:5000
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:5000
+      - ORDER_SERVICE_URL=http://order-service:5000
+      - RESERVATION_SERVICE_URL=http://reservation-service:5000
+    env_file:
+      - .env
+    ports:
+      - "5010:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  cancel-booking-service:
+    build: ./services/complex/cancel_booking
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      reservation-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PORT=5000
+      - USER_SERVICE_URL=http://user-service:5000
+      - RESERVATION_SERVICE_URL=http://reservation-service:5000
+      - ORDER_SERVICE_URL=http://order-service:5000
+      - PAYMENT_SERVICE_URL=http://payment-service:5000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5000
+      - REALLOCATE_RESERVATION_SERVICE_URL=http://reallocate-reservation-service:5000
+    env_file:
+      - .env
+    ports:
+      - "5008:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  reallocate-reservation-service:
+    build: ./services/complex/reallocate_reservation
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      reservation-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PORT=5000
+      - USER_SERVICE_URL=http://user-service:5000
+      - RESERVATION_SERVICE_URL=http://reservation-service:5000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5000
+    env_file:
+      - .env
+    ports:
+      - "5009:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  # User Scenario 3 Services
+  driver-service:
+    build: ./services/simple/driver
+    environment:
+      - PORT=5000
+    env_file:
+      - .env
+    ports:
+      - "5011:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  driver-details-service:
+    build: ./services/simple/driver_details
+    environment:
+      - PORT=5000
+    env_file:
+      - .env
+    ports:
+      - "5012:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  geo-service:
+    build: ./services/simple/geo
+    environment:
+      - PORT=5000
+    env_file:
+      - .env
+    ports:
+      - "5013:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  driver-status-service:
+    build: ./services/complex/driver_status
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      driver-service:
+        condition: service_started
+      driver-details-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - PORT=5000
+      - DRIVER_SERVICE_URL=http://driver-service:5000
+      - DRIVER_DETAILS_SERVICE_URL=http://driver-details-service:5000
+      - USER_SERVICE_URL=http://user-service:5000
+      - ORDER_SERVICE_URL=http://order-service:5000
+    env_file:
+      - .env
+    ports:
+      - "5015:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
+  dms-service:
+    build: ./services/complex/dms
+    depends_on:
+      driver-service:
+        condition: service_started
+      driver-details-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      restaurant-service:
+        condition: service_started
+      geo-service:
+        condition: service_started
+    environment:
+      - PORT=5000
+      - DRIVER_SERVICE_URL=http://driver-service:5000
+      - DRIVER_DETAILS_SERVICE_URL=http://driver-details-service:5000
+      - USER_SERVICE_URL=http://user-service:5000
+      - ORDER_SERVICE_URL=http://order-service:5000
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:5000
+      - GEOCODING_SERVICE_URL=http://geo-service:5000
+    env_file:
+      - .env
+    ports:
+      - "5014:5000"
+    restart: on-failure
+    networks:
+      - feastfinder-network
+
 networks:
   feastfinder-network:
     driver: bridge 

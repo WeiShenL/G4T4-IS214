@@ -264,9 +264,11 @@ def delete_geospatial(order_id):
             "message": f"An error occurred: {str(e)}"
         }), 500
     
+# Main entry point
 if __name__ == '__main__':
-    print("Starting Geospatial Service...")
-    app.run(host='0.0.0.0', port=5013, debug=True)
+    port = int(os.environ.get('PORT', 5013))
+    print(f"Starting geo service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)
 
 
 # test (dms endpoint before geo.py (geo.py post test))
