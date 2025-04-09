@@ -198,22 +198,11 @@ export default {
           throw new Error("Driver ID not available.");
         }
 
-        // 1. Update driver's live location first
-        const proxyUrl = `http://localhost:5012/proxy-geolocation/${driverId}`;
-        console.log('📍 Updating location via:', proxyUrl);
-        const proxyResponse = await fetch(proxyUrl, { method: 'POST' });
-        if (!proxyResponse.ok) {
-          const proxyErrorText = await proxyResponse.text();
-          console.error('🚨 Failed to update location:', proxyErrorText);
-          // Decide if you want to stop here or continue with potentially stale data
-          // For now, let's throw an error to make it clear
-          throw new Error(`Failed to update location: ${proxyResponse.status}`);
-        }
-        const locationUpdateResult = await proxyResponse.json();
-        console.log('✅ Location updated successfully:', locationUpdateResult);
+        // 1. Update driver's live location first using Geolocation API to db
+        await updateDriverLocation();
+        console.log('📍 Updated location via device Geolocation API');
 
-
-        // 2. Now fetch the delivery management data (which should use the updated location)
+        // 2. Now fetch the delivery management data
         const deliveryUrl = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
         console.log('👉 Fetching delivery data:', deliveryUrl);
         
@@ -230,7 +219,7 @@ export default {
         const data = await response.json();
         console.log('👉 JSON payload:', data);
 
-        // Store the response data for reuse
+        // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
         deliveryData.value = data;
         
         // Check if Google Maps has loaded and map has been initialized
@@ -457,23 +446,63 @@ export default {
           return;
         }
 
-        // Use your backend proxy that handles both Google API call and DB update
-        const response = await fetch(`http://localhost:5012/proxy-geolocation/${driverId}`, {
-          method: "POST",  // This endpoint on your server expects POST
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ considerIp: true })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Location update failed: ${errorData.message}`);
+        // Use browser's Geolocation API 
+        if (!navigator.geolocation) {
+          throw new Error("Geolocation is not supported by this browser");
         }
 
-        const data = await response.json();
-        console.log("Driver location successfully updated:", data);
-        
+        // Get current position using device GPS/location services
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            console.log(`Precise location obtained: ${latitude}, ${longitude}`);
+
+            // Update driver location in driverdetail service
+            const response = await fetch(`http://localhost:5012/driverdetails/${driverId}/location`, {
+              method: "PATCH",
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                location: `${latitude},${longitude}`,
+                accuracy: position.coords.accuracy
+              })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.text();
+              throw new Error(`Location update failed: ${errorData}`);
+            }
+
+            const data = await response.json();
+            console.log("Driver location successfully updated:", data);
+          },
+          (error) => {
+            let errorMessage;
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = "User denied the request for geolocation";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = "Location information is unavailable";
+                break;
+              case error.TIMEOUT:
+                errorMessage = "The request to get user location timed out";
+                break;
+              default:
+                errorMessage = "An unknown error occurred";
+                break;
+            }
+            console.error(`Geolocation error: ${errorMessage}`);
+            errorMessage.value = `Location error: ${errorMessage}. Please enable location services.`;
+          },
+          {
+            enableHighAccuracy: true, // Request high accuracy GPS data
+            timeout: 10000,           // Wait up to 10 seconds
+            maximumAge: 0             // Don't use cached position
+          }
+        );
       } catch (err) {
         console.error("Error updating driver location:", err);
+        errorMessage.value = `Failed to update location: ${err.message}`;
       }
     };
 
@@ -558,9 +587,10 @@ export default {
             // if want to auto fetch data, after map initialisation then uncomment this
             // fetchDeliveryData();
             
-            // tracking live location
+            // tracking live location with device GPS
             updateDriverLocation(); // Immediate first update
-            setInterval(updateDriverLocation, 60 * 60 * 1000); // Hourly updates
+            // Update location more frequently (every 5 minutes) for more accurate tracking
+            setInterval(updateDriverLocation, 5 * 60 * 1000);
           } else {
             console.warn('Map container not available yet, will initialize later');
             // Try again after a short delay to allow the DOM to render

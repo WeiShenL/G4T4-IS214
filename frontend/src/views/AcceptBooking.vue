@@ -389,9 +389,9 @@
           // Clear the pending reservation from localStorage
           localStorage.removeItem('pendingReservation');
           
-          // Redirect to dashboard after 3 seconds
+          // Redirect to reservations after 3 seconds (not dashboard bruhh)
           setTimeout(() => {
-            router.push('/customer-dashboard');
+            router.push('/reservations');
           }, 3000);
           
         } catch (error) {
