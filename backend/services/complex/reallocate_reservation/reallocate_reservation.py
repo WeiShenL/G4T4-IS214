@@ -10,73 +10,48 @@ import requests
 from flask import Flask, request, jsonify
 import pika
 
-from backend.rabbitmq.amqp_lib import connect, is_connection_open
-from backend.rabbitmq.amqp_setup import (
-    amqp_host, 
-    amqp_port, 
-    exchange_name, 
-    exchange_type
-)
+# RabbitMQ configuration
+RABBITMQ_HOST = "localhost"
+RABBITMQ_PORT = 5672
+RABBITMQ_EXCHANGE = "notification_topic"
+RABBITMQ_EXCHANGE_TYPE = "topic"
 
 app = Flask(__name__)
 
-# Global connection variables
-connection = None
-channel = None
-
-# Connect to RabbitMQ
-def connectAMQP():
-    global connection, channel
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            if connection is None or not is_connection_open(connection):
-                print("  Connecting to AMQP broker...")
-                connection, channel = connect(
-                    hostname=amqp_host,
-                    port=amqp_port,
-                    exchange_name=exchange_name,
-                    exchange_type=exchange_type,
-                )
-            return True
-        except Exception as e:
-            print(f"  Attempt {attempt+1}/{max_retries}: Unable to connect to RabbitMQ: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(2)
-            else:
-                print("  Max retries reached, continuing operation...")
-                return False
-
 # Publish message to RabbitMQ
-def publish_message(routing_key, message):
-    global connection, channel
-    
-    # Try up to 3 times to publish the message
-    for attempt in range(3):
-        try:
-            # Check connection and try to reconnect if needed
-            if connection is None or not is_connection_open(connection):
-                connected = connectAMQP()
-                if not connected:
-                    print("  Could not connect to RabbitMQ, will try again...")
-                    time.sleep(1)
-                    continue
-            
-            message_json = json.dumps(message)
-            channel.basic_publish(
-                exchange=exchange_name,
-                routing_key=routing_key,
-                body=message_json
+def publish_to_rabbitmq(routing_key, message):
+    """Publish a message to RabbitMQ"""
+    try:
+        # Connect to RabbitMQ
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT
             )
-            print(f"  Published message to {routing_key}: {message_json}")
-            return True
-        except Exception as e:
-            print(f"  Error publishing message (attempt {attempt+1}/3): {e}")
-            connection = None  # Reset connection to force reconnect
-            time.sleep(1)
-    
-    print("  Failed to publish message after multiple attempts")
-    return False
+        )
+        channel = connection.channel()
+        
+        # Ensure exchange exists
+        channel.exchange_declare(
+            exchange=RABBITMQ_EXCHANGE,
+            exchange_type=RABBITMQ_EXCHANGE_TYPE,
+            durable=True
+        )
+        
+        # Publish message
+        channel.basic_publish(
+            exchange=RABBITMQ_EXCHANGE,
+            routing_key=routing_key,
+            body=json.dumps(message)
+        )
+        
+        # Close connection
+        connection.close()
+        print(f"Published message to {routing_key}: {json.dumps(message)}")
+        return True
+    except Exception as e:
+        print(f"Error publishing to RabbitMQ: {e}")
+        return False
 
 @app.route('/reallocate', methods=['POST'])
 def reallocate_reservation():
@@ -201,29 +176,33 @@ def reallocate_reservation():
                 "message_type": "reallocation.notice"
             }
             
-            # Publish the notification message
-            notification_sent = publish_message("reallocation.notice", notification_data)
+            publish_to_rabbitmq("reallocation.notice", notification_data)
             
-            if notification_sent:
-                print("Reallocation notification sent successfully")
-                return jsonify({
-                    "message": "Reallocation successful", 
-                    "status": "pending",
-                    "user_id": user_id,
-                    "table_no": table_no
-                }), 200
-            else:
-                print("Reallocation notification could not be sent")
-                return jsonify({"error": "Failed to send reallocation notification"}), 500
+            # Remove user from waitlist
+            try:
+                print(f"Removing user {user_id} from waitlist")
+                remove_response = requests.delete(f"https://qks.outsystemscloud.com/Waitlist_Service/rest/waitlist/Delete_user?id={user_id}")
+                remove_response.raise_for_status()
+                print(f"User {user_id} removed from waitlist")
+            except requests.exceptions.RequestException as e:
+                print(f"Error removing user from waitlist: {str(e)}")
+                # Continue even if removal fails
+            
+            return jsonify({
+                "message": "Reallocation successful",
+                "user_id": user_id,
+                "reservation_id": reservation_id,
+                "table_no": table_no
+            }), 200
+            
         except Exception as e:
-            print(f"Error sending notification: {str(e)}")
-            return jsonify({"error": f"Failed to send reallocation notification: {str(e)}"}), 500
+            print(f"Error during notification: {str(e)}")
+            return jsonify({"error": f"Reallocation failed during notification: {str(e)}"}), 500
             
     except Exception as e:
-        print(f"Unexpected error during reallocation: {str(e)}")
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+        print(f"Error during reallocation: {str(e)}")
+        return jsonify({"error": f"Reallocation failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    print("Starting reallocation_reservation service...")
-    connectAMQP()
+    print("Starting reallocate_reservation service...")
     app.run(host='0.0.0.0', port=5009, debug=True)

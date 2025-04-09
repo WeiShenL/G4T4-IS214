@@ -13,75 +13,49 @@ from flask_cors import CORS
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
 sys.path.insert(0, project_root)
 
-# Import RabbitMQ connection utilities
-from backend.rabbitmq.amqp_lib import connect, is_connection_open
-from backend.rabbitmq.amqp_setup import (
-    amqp_host,
-    amqp_port,
-    exchange_name,
-    exchange_type
-)
+# RabbitMQ configuration
+RABBITMQ_HOST = "localhost"
+RABBITMQ_PORT = 5672
+RABBITMQ_EXCHANGE = "notification_topic"
+RABBITMQ_EXCHANGE_TYPE = "topic"
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Global connection variables
-connection = None
-channel = None
-
-# Connect to RabbitMQ
-def connectAMQP():
-    global connection, channel
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            if connection is None or not is_connection_open(connection):
-                print("Connecting to AMQP broker...")
-                connection, channel = connect(
-                    hostname=amqp_host,
-                    port=amqp_port,
-                    exchange_name=exchange_name,
-                    exchange_type=exchange_type,
-                )
-            return True
-        except Exception as e:
-            print(f"Attempt {attempt+1}/{max_retries}: Unable to connect to RabbitMQ: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(2)
-            else:
-                print("Max retries reached, exiting...")
-                return False
-
 # Publish message to RabbitMQ
-def publish_message(routing_key, message):
-    global connection, channel
-    
-    # Try up to 3 times to publish the message
-    for attempt in range(3):
-        try:
-            # Check connection and try to reconnect if needed
-            if connection is None or not is_connection_open(connection):
-                connected = connectAMQP()
-                if not connected:
-                    print("  Could not connect to RabbitMQ, will try again...")
-                    time.sleep(1)
-                    continue
-            
-            message_json = json.dumps(message)
-            channel.basic_publish(
-                exchange=exchange_name,
-                routing_key=routing_key,
-                body=message_json
+def publish_to_rabbitmq(routing_key, message):
+    """Publish a message to RabbitMQ"""
+    try:
+        # Connect to RabbitMQ
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                port=RABBITMQ_PORT
             )
-            print(f"  Published message to {routing_key}: {message_json}")
-            return True
-        except Exception as e:
-            print(f"  Error publishing message (attempt {attempt+1}/3): {e}")
-            connection = None  # Reset connection to force reconnect
-            time.sleep(1)
-    
-    print("  Failed to publish message after multiple attempts")
-    return False
+        )
+        channel = connection.channel()
+        
+        # Ensure exchange exists
+        channel.exchange_declare(
+            exchange=RABBITMQ_EXCHANGE,
+            exchange_type=RABBITMQ_EXCHANGE_TYPE,
+            durable=True
+        )
+        
+        # Publish message
+        channel.basic_publish(
+            exchange=RABBITMQ_EXCHANGE,
+            routing_key=routing_key,
+            body=json.dumps(message)
+        )
+        
+        # Close connection
+        connection.close()
+        print(f"Published message to {routing_key}: {json.dumps(message)}")
+        return True
+    except Exception as e:
+        print(f"Error publishing to RabbitMQ: {e}")
+        return False
 
 @app.route('/accept-booking', methods=['POST'])
 def accept_booking():
@@ -199,29 +173,31 @@ def accept_booking():
                 "reservation_id": new_reservation_id,
                 "message_type": "reallocation.confirmation"
             }
-            publish_message("reallocation.confirmation", notification_data)
+            publish_to_rabbitmq("reallocation.confirmation", notification_data)
             print("Notification queued successfully")
+            
+            # Return success response
+            return jsonify({
+                "message": "Booking accepted and confirmed",
+                "reservation_id": new_reservation_id,
+                "table_no": table_no,
+                "booking_time": booking_time
+            }), 200
+        
         except Exception as e:
-            print(f"Error queuing notification: {str(e)}")
-            return jsonify({"error": f"Failed to queue notification: {str(e)}"}), 500
-
-        # Return success response with the new reservation ID
-        return jsonify({
-            "message": "Booking accepted and reservation updated successfully",
-            "reservation_id": new_reservation_id,  
-            "user_id": user_id,
-            "username": username,
-            "phone_number": phone_number,
-            "table_no": table_no,
-            "status": "Booked",
-            "booking_time": booking_time
-        }), 200
+            print(f"Error queueing notification: {str(e)}")
+            # Return partial success since the booking was accepted
+            return jsonify({
+                "message": "Booking accepted but notification failed",
+                "reservation_id": new_reservation_id,
+                "table_no": table_no,
+                "booking_time": booking_time
+            }), 207
 
     except Exception as e:
-        print(f"Unexpected error during booking acceptance: {str(e)}")
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+        print(f"Error in accept_booking: {str(e)}")
+        return jsonify({"error": f"Error processing booking acceptance: {str(e)}"}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Starting accept_booking service...")
-    connectAMQP()
-    app.run(host='0.0.0.0', port=5010, debug=True)
+    app.run(host="0.0.0.0", port=5010, debug=True)
