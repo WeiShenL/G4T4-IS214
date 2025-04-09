@@ -156,7 +156,8 @@ def verify_payment(session_id):
         payment_record = {
             "stripe_payment_id": payment_intent.id,
             "amount": payment_intent.amount / 100,  # Convert cents to dollars
-            "status": payment_intent.status
+            "status": payment_intent.status,
+            "created_at": datetime.now().isoformat()
         }
         
         # Insert payment record into the database
@@ -172,7 +173,8 @@ def verify_payment(session_id):
             "paymentIntent": {
                 "id": payment_intent.id,
                 "status": payment_intent.status,
-                "amount": payment_intent.amount
+                "amount": payment_intent.amount,
+                "created_at": datetime.now().isoformat()
             }
         })
     

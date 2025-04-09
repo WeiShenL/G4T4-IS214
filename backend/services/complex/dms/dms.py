@@ -149,9 +149,7 @@ def get_delivery_management_data():
                 return jsonify({"code": 404, "message": "Driver's address not found."}), 404
             
         
-
-
-         # Call the geocoding service to filter nearby restaurants
+        # Call the geocoding service to filter nearby restaurants
         geo_payload = {
             "data": {
                 "driver": driver_details,
