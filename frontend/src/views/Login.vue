@@ -81,7 +81,6 @@
               >
               <label class="form-check-label" for="rememberMe">Remember me</label>
             </div>
-            <router-link to="/forgot-password" class="forgotten-password">Forgot password?</router-link>
           </div>
           
           <button type="submit" class="login-btn" :disabled="isLoading">
@@ -93,19 +92,6 @@
             </span>
           </button>
         </form>
-        
-        <div class="divider">
-          <span>or continue with</span>
-        </div>
-        
-        <div class="social-login">
-          <a href="#" class="social-btn" @click.prevent="socialLogin('google')">
-            <i class="fab fa-google"></i> Google
-          </a>
-          <a href="#" class="social-btn" @click.prevent="socialLogin('facebook')">
-            <i class="fab fa-facebook-f"></i> Facebook
-          </a>
-        </div>
         
         <div class="signup-link">
           Don't have an account? <router-link to="/signup">Sign up</router-link>
@@ -212,10 +198,6 @@ export default {
       }
     };
     
-    const socialLogin = async (provider) => {
-      alert(`Social login with ${provider} will be implemented in a future update.`);
-    };
-    
     // Helper function to redirect logged in users
     const redirectLoggedInUser = async (userId) => {
       try {
@@ -243,7 +225,6 @@ export default {
       isLoading,
       togglePassword,
       login,
-      socialLogin
     };
   }
 };

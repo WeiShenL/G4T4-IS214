@@ -158,12 +158,12 @@ export default {
     const driverStats = [
       {
         icon: 'fas fa-truck',
-        title: 'Total Deliveries',
+        title: 'Today\'s Deliveries',
         value: '0'
       },
       {
         icon: 'fas fa-dollar-sign',
-        title: 'Total Earnings',
+        title: 'Today\'s Earnings',
         value: '$0.00'
       },
       {
@@ -194,10 +194,30 @@ export default {
       isFetching.value = true;
       try {
         const driverId = user.value?.id;
-        const url = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
-        console.log('👉 Fetching:', url);
+        if (!driverId) {
+          throw new Error("Driver ID not available.");
+        }
+
+        // 1. Update driver's live location first
+        const proxyUrl = `http://localhost:5012/proxy-geolocation/${driverId}`;
+        console.log('📍 Updating location via:', proxyUrl);
+        const proxyResponse = await fetch(proxyUrl, { method: 'POST' });
+        if (!proxyResponse.ok) {
+          const proxyErrorText = await proxyResponse.text();
+          console.error('🚨 Failed to update location:', proxyErrorText);
+          // Decide if you want to stop here or continue with potentially stale data
+          // For now, let's throw an error to make it clear
+          throw new Error(`Failed to update location: ${proxyResponse.status}`);
+        }
+        const locationUpdateResult = await proxyResponse.json();
+        console.log('✅ Location updated successfully:', locationUpdateResult);
+
+
+        // 2. Now fetch the delivery management data (which should use the updated location)
+        const deliveryUrl = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
+        console.log('👉 Fetching delivery data:', deliveryUrl);
         
-        const response = await fetch(url);
+        const response = await fetch(deliveryUrl);
         console.log('👉 Status:', response.status, 'OK?', response.ok);
         
         // If it's not a 2xx, throw so you hit your catch:
@@ -210,7 +230,7 @@ export default {
         const data = await response.json();
         console.log('👉 JSON payload:', data);
 
-        // Store the response data for reuse (NEWWWWWWWWWWWWWWWWWWWWWWWW)
+        // Store the response data for reuse
         deliveryData.value = data;
         
         // Check if Google Maps has loaded and map has been initialized
@@ -437,73 +457,26 @@ export default {
           return;
         }
 
-        // Use HTML5 Geolocation API for better accuracy
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              // GPS coordinates from browser
-              const latitude = position.coords.latitude;
-              const longitude = position.coords.longitude;
-              
-              // Send the accurate coordinates to the backend
-              const response = await fetch(`http://localhost:5012/driverdetails/${driverId}`, {
-                method: "PATCH",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  live_location: `${latitude},${longitude}`
-                })
-              });
+        // Use your backend proxy that handles both Google API call and DB update
+        const response = await fetch(`http://localhost:5012/proxy-geolocation/${driverId}`, {
+          method: "POST",  // This endpoint on your server expects POST
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ considerIp: true })
+        });
 
-              if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Location update failed: ${errorData.message}`);
-              }
-
-              const data = await response.json();
-              console.log("Driver location successfully updated", data);
-              
-              // If we need to update the map, do it here
-              if (map.value && markers.value.length > 0) {
-                // Find the driver marker (green marker)
-                const driverMarker = markers.value.find(marker => 
-                  marker.getIcon() === 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                );
-                
-                if (driverMarker) {
-                  // Update the marker position
-                  driverMarker.setPosition({ lat: latitude, lng: longitude });
-                }
-              }
-            },
-            (error) => {
-              // geolocation errors 
-              console.error("Geolocation error:", error);
-              
-              let errorMsg = "Unable to access your location.";
-              
-              // Show the error temporarily, Clear the message after a delay
-              errorMessage.value = errorMsg;
-              setTimeout(() => {
-                if (errorMessage.value === errorMsg) {
-                  errorMessage.value = ''; 
-                }
-              }, 5000);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 0
-            }
-          );
-        } else {
-          // Browser doesn't support geolocation
-          console.error("Geolocation is not supported by this browser");
-          errorMessage.value = "Geolocation is not supported by your browser. Please use a modern browser with location services.";
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Location update failed: ${errorData.message}`);
         }
+
+        const data = await response.json();
+        console.log("Driver location successfully updated:", data);
+        
       } catch (err) {
         console.error("Error updating driver location:", err);
       }
     };
+
 
     // Load user data when component mounts
     onMounted(async () => {

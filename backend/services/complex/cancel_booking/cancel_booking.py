@@ -82,6 +82,7 @@ def publish_message(routing_key, message):
 @app.route('/cancel/<int:reservation_id>', methods=['POST'])
 def process_cancellation(reservation_id):
     # Call reservation.py to cancel the reservation
+    # this clears the reservation fields, nullify fields
     try:
         # Use the reservation API endpoint in your application
         reservation_response = requests.patch(
@@ -121,7 +122,8 @@ def process_cancellation(reservation_id):
         print(f"Failed to fetch user details: {str(e)}")
         return jsonify({"error": f"Failed to fetch user details: {str(e)}"}), 500
 
-    # Process refund if payment_id exists
+    # TODO:Process refund if payment_id exists (exist where?) exit from reservation table as above?
+    # i call the payment msc
     if payment_id:
         try:
             # Call the payment service to process the refund
