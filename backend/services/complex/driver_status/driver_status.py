@@ -1,21 +1,26 @@
-import sys
-import os
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-sys.path.insert(0, project_root)
-
 import json
 import time
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pika
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_EXCHANGE = "notification_topic"
 RABBITMQ_EXCHANGE_TYPE = "topic"
+
+# Service URLs
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5004")
+DRIVER_SERVICE_URL = os.environ.get("DRIVER_SERVICE_URL", "http://driver-service:5011")
+DRIVER_DETAILS_SERVICE_URL = os.environ.get("DRIVER_DETAILS_SERVICE_URL", "http://driver-details-service:5012")
 
 app = Flask(__name__)
 CORS(app)
@@ -68,14 +73,14 @@ def accept_order():
 
         # Update Driver Availability
         driver_response = requests.patch(
-            f"http://localhost:5012/driverdetails/{driver_id}",
+            f"{DRIVER_DETAILS_SERVICE_URL}/driverdetails/{driver_id}",
             json={"availability": False}
         )
         if driver_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to update driver availability."}), 500
         
         # Fetch driver profile to get driver information
-        driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
+        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
 
@@ -83,7 +88,7 @@ def accept_order():
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
         # Fetch Order Details
-        order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
+        order_response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
 
@@ -92,7 +97,7 @@ def accept_order():
      
 
         # Fetch Customer Details
-        customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
+        customer_response = requests.get(f"{USER_SERVICE_URL}/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
 
@@ -132,7 +137,7 @@ def pick_up_order():
             return jsonify({"code": 400, "message": "Missing driver_id or order_id."}), 400
         
         # Fetch driver profile to get driver information
-        driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
+        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
 
@@ -140,7 +145,7 @@ def pick_up_order():
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
         # Fetch Order Details
-        order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
+        order_response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
 
@@ -149,7 +154,7 @@ def pick_up_order():
      
 
         # Fetch Customer Details
-        customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
+        customer_response = requests.get(f"{USER_SERVICE_URL}/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
 
@@ -191,7 +196,7 @@ def deliver_order():
 
         # Step 1: Update Driver Availability
         driver_response = requests.patch(
-            f"http://localhost:5012/driverdetails/{driver_id}",
+            f"{DRIVER_DETAILS_SERVICE_URL}/driverdetails/{driver_id}",
             json={"availability": True}
         )
         if driver_response.status_code != 200:
@@ -199,7 +204,7 @@ def deliver_order():
             
         # Step 1.5: Update driver's delivery counts and earnings
         delivery_stats_response = requests.patch(
-            f"http://localhost:5012/driverdetails/{driver_id}/complete-delivery"
+            f"{DRIVER_DETAILS_SERVICE_URL}/driverdetails/{driver_id}/complete-delivery"
         )
         if delivery_stats_response.status_code != 200:
             print(f"Warning: Failed to update driver delivery stats: {delivery_stats_response.text}")
@@ -208,7 +213,7 @@ def deliver_order():
             print("Successfully updated driver delivery stats")
         
         # step 2 Fetch driver profile to get driver information
-        driver_profile_response = requests.get(f"http://localhost:5011/driver/{driver_id}")
+        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
 
@@ -216,7 +221,7 @@ def deliver_order():
         driver_name = driver_data.get("driver_name", "Driver")  # Use the correct key for driver name
 
         # Step 3: Fetch Order Details
-        order_response = requests.get(f"http://localhost:5004/api/orders/{order_id}")
+        order_response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/{order_id}")
         if order_response.status_code != 200:
             return jsonify({"code": 404, "message": "Order not found."}), 404
 
@@ -225,7 +230,7 @@ def deliver_order():
      
 
         # Step 4: Fetch Customer Details
-        customer_response = requests.get(f"http://localhost:5000/api/user/{customer_id}")
+        customer_response = requests.get(f"{USER_SERVICE_URL}/api/user/{customer_id}")
         if customer_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch customer details."}), 500
 
@@ -285,5 +290,6 @@ def deliver_order():
 #         }), 500
 
 if __name__ == '__main__':
-    print("Starting driver_status service...")
-    app.run(host='0.0.0.0', port=5015, debug=True)
+    port = int(os.environ.get("PORT", 5015))
+    print(f"Starting driver status service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)

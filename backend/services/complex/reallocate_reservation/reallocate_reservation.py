@@ -1,8 +1,8 @@
-import sys
 import os
+from dotenv import load_dotenv
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-sys.path.insert(0, project_root)
+# Load environment variables
+load_dotenv()
 
 import json
 import time
@@ -11,10 +11,15 @@ from flask import Flask, request, jsonify
 import pika
 
 # RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_EXCHANGE = "notification_topic"
 RABBITMQ_EXCHANGE_TYPE = "topic"
+
+# Service URLs
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000")
+RESERVATION_SERVICE_URL = os.environ.get("RESERVATION_SERVICE_URL", "http://reservation-service:5000")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5000")
 
 app = Flask(__name__)
 
@@ -75,7 +80,7 @@ def reallocate_reservation():
             
             if not user_id or user_id=="0":
                 try: 
-                    delete_response = requests.delete(f"http://localhost:5002/api/reservations/delete/{reservation_id}")
+                    delete_response = requests.delete(f"{RESERVATION_SERVICE_URL}/api/reservations/delete/{reservation_id}")
                     delete_response.raise_for_status()
                     print(f"Reservation {reservation_id} successfully deleted.")
                 except requests.exceptions.RequestException as e:
@@ -92,7 +97,7 @@ def reallocate_reservation():
         # Get user details from user service by submitting user_id
         try:
             print(f"Getting user details for user ID: {user_id}")
-            user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+            user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
             user_response.raise_for_status()
             user_data = user_response.json()
             
@@ -120,7 +125,7 @@ def reallocate_reservation():
             # Get the most recent order for this user
             try:
                 print(f"Getting orders for user ID: {user_id}")
-                orders_response = requests.get(f"http://localhost:5004/api/orders/user/{user_id}")
+                orders_response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/user/{user_id}")
                 orders_response.raise_for_status()
                 orders_data = orders_response.json()
                 
@@ -156,7 +161,7 @@ def reallocate_reservation():
                 reservation_update_data["payment_id"] = payment_id
             
             reservation_response = requests.patch(
-                f"http://localhost:5002/api/reservations/reallocate/{reservation_id}", 
+                f"{RESERVATION_SERVICE_URL}/api/reservations/reallocate/{reservation_id}", 
                 json=reservation_update_data
             )
             reservation_response.raise_for_status()
@@ -211,5 +216,6 @@ def reallocate_reservation():
         return jsonify({"error": f"Reallocation failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    print("Starting reallocate_reservation service...")
-    app.run(host='0.0.0.0', port=5009, debug=True)
+    port = int(os.environ.get('PORT', 5009))
+    print(f"Starting reallocate_reservation service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)

@@ -6,12 +6,22 @@ import time
 import uuid
 import random
 from flask_cors import CORS
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_EXCHANGE = "notification_topic"
 RABBITMQ_EXCHANGE_TYPE = "topic"
+
+# Service URLs
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000")
+RESERVATION_SERVICE_URL = os.environ.get("RESERVATION_SERVICE_URL", "http://reservation-service:5000")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5000")
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -95,9 +105,9 @@ def accept_booking():
                 update_payload["booking_time"] = booking_time
                 print(f"Including booking_time in update: {booking_time}")
                 
-            # Update the reservation by calling ghe reservation.py service
+            # Update the reservation by calling the reservation.py service
             update_response = requests.patch(
-                f"http://localhost:5002/reservation/reallocate_confirm_booking/{reservation_id}",
+                f"{RESERVATION_SERVICE_URL}/reservation/reallocate_confirm_booking/{reservation_id}",
                 json=update_payload
             )
             update_response.raise_for_status()
@@ -123,7 +133,7 @@ def accept_booking():
                     "order_type": "dine_in"
                 }
                 order_update_response = requests.patch(
-                    f"http://localhost:5004/api/orders/{order_id}/type",
+                    f"{ORDER_SERVICE_URL}/api/orders/{order_id}/type",
                     json=order_update_payload
                 )
                 order_update_response.raise_for_status()
@@ -142,7 +152,7 @@ def accept_booking():
         if not username or not phone_number:
             try:
                 print(f"Fetching user details for user ID: {user_id}")
-                user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+                user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
                 user_response.raise_for_status()
                 user_data = user_response.json()
 
@@ -193,5 +203,6 @@ def accept_booking():
         return jsonify({"error": f"Error processing booking acceptance: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    print("Starting accept_booking service...")
-    app.run(host="0.0.0.0", port=5010, debug=True)
+    port = int(os.environ.get('PORT', 5010))
+    print(f"Starting accept_booking service on port {port}...")
+    app.run(host="0.0.0.0", port=port, debug=True)

@@ -5,9 +5,15 @@ A standalone script to create exchanges and queues on RabbitMQ.
 """
 
 import pika
+import os
+from dotenv import load_dotenv
 
-amqp_host = "localhost"
-amqp_port = 5672
+# Load environment variables
+load_dotenv()
+
+# Get RabbitMQ credentials from environment variables or use defaults
+amqp_host = os.environ.get('RABBITMQ_HOST', 'localhost')
+amqp_port = int(os.environ.get('RABBITMQ_PORT', 5672))
 exchange_name = "notification_topic"
 exchange_type = "topic"
 

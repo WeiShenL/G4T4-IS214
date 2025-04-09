@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# supabase api
+# Database connection
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
@@ -240,5 +240,6 @@ def get_order_by_id(order_id):
         }), 500
 
 if __name__ == '__main__':
-    print(f"Starting order service on port 5004")
-    app.run(host='0.0.0.0', port=5004, debug=True)
+    port = int(os.environ.get('PORT', 5004))
+    print(f"Starting order service on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=True)

@@ -1,16 +1,27 @@
 import json
 import time
 import requests
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pika
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_EXCHANGE = "notification_topic"
 RABBITMQ_EXCHANGE_TYPE = "topic"
+
+# Service URLs
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000")
+RESTAURANT_SERVICE_URL = os.environ.get("RESTAURANT_SERVICE_URL", "http://restaurant-service:5000")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5000")
+RESERVATION_SERVICE_URL = os.environ.get("RESERVATION_SERVICE_URL", "http://reservation-service:5000")
 
 app = Flask(__name__)
 CORS(app)
@@ -86,7 +97,7 @@ def create_booking():
         # Call order service to create the order
         print(f"Creating order with data: {order_data}")
         order_response = requests.post(
-            "http://localhost:5004/api/orders",
+            f"{ORDER_SERVICE_URL}/api/orders",
             json=order_data
         )
         
@@ -113,7 +124,7 @@ def create_booking():
                 # Get user details for notifications
                 user_id = data.get("user_id")
                 try:
-                    user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+                    user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
                     user_response.raise_for_status()
                     user_data = user_response.json()
                     
@@ -128,7 +139,7 @@ def create_booking():
                 # Get restaurant details
                 restaurant_id = data['restaurant_id']
                 try:
-                    restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
+                    restaurant_response = requests.get(f"{RESTAURANT_SERVICE_URL}/api/restaurants/{restaurant_id}")
                     restaurant_response.raise_for_status()
                     restaurant_data = restaurant_response.json()
                     
@@ -185,7 +196,7 @@ def create_booking():
         restaurant_id = data['restaurant_id']
         print(f"Checking capacity for restaurant {restaurant_id}")
         capacity_response = requests.get(
-            f"http://localhost:5001/api/restaurants/capacity/{restaurant_id}"
+            f"{RESTAURANT_SERVICE_URL}/api/restaurants/capacity/{restaurant_id}"
         )
         
         if not capacity_response.ok:
@@ -200,7 +211,7 @@ def create_booking():
         # We need to count only dine-in orders against capacity
         # First, get all orders with order_type = "dine_in" for this restaurant
         dine_in_orders_response = requests.get(
-            f"http://localhost:5004/api/orders/restaurant/{restaurant_id}/type/dine_in"
+            f"{ORDER_SERVICE_URL}/api/orders/restaurant/{restaurant_id}/type/dine_in"
         )
         
         dine_in_count = 0
@@ -220,7 +231,7 @@ def create_booking():
         # Get user details for notifications
         user_id = data.get("user_id")
         try:
-            user_response = requests.get(f"http://localhost:5000/api/user/{user_id}")
+            user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
             user_response.raise_for_status()
             user_data = user_response.json()
             
@@ -234,7 +245,7 @@ def create_booking():
             
         # Get restaurant details
         try:
-            restaurant_response = requests.get(f"http://localhost:5001/api/restaurants/{restaurant_id}")
+            restaurant_response = requests.get(f"{RESTAURANT_SERVICE_URL}/api/restaurants/{restaurant_id}")
             restaurant_response.raise_for_status()
             restaurant_data = restaurant_response.json()
             
@@ -313,7 +324,7 @@ def create_booking():
         # Call reservation service
         print(f"Creating reservation with data: {reservation_data}")
         reservation_response = requests.post(
-            "http://localhost:5002/api/reservations",
+            f"{RESERVATION_SERVICE_URL}/api/reservations",
             json=reservation_data
         )
         
@@ -329,7 +340,7 @@ def create_booking():
         
         # Update order type to "dine_in"
         order_update_response = requests.patch(
-            f"http://localhost:5004/api/orders/{order_id}/type",
+            f"{ORDER_SERVICE_URL}/api/orders/{order_id}/type",
             json={"order_type": "dine_in"}
         )
         
@@ -375,5 +386,6 @@ def create_booking():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5007))
     print("Starting create_booking service...")
-    app.run(host='0.0.0.0', port=5007, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=True)

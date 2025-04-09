@@ -247,5 +247,6 @@ def update_driver_location(driver_id):
 
 # Main entry point
 if __name__ == '__main__':
-    print("Starting Flask app for driver details management...")
-    app.run(host='0.0.0.0', port=5012, debug=True)
+    port = int(os.environ.get('PORT', 5012))
+    print(f"Starting driver details service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)

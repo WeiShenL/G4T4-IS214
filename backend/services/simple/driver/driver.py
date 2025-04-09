@@ -43,5 +43,6 @@ def get_driver(driver_id):
         }), 500
 
 if __name__ == '__main__':
-    print("Starting driver service...")
-    app.run(host='0.0.0.0', port=5011, debug=True)  # Using port 5009
+    port = int(os.environ.get('PORT', 5011))
+    print(f"Starting driver service on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=True)

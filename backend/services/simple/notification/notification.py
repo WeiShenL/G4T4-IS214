@@ -1,8 +1,4 @@
-import sys
 import os
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-sys.path.insert(0, project_root)
 
 # Standard imports
 import json
@@ -17,14 +13,14 @@ from twilio.rest import Client
 from datetime import datetime
 from supabase import create_client, Client as SupabaseClient
 
-# RabbitMQ configuration
-RABBITMQ_HOST = "localhost"
-RABBITMQ_PORT = 5672
-RABBITMQ_EXCHANGE = "notification_topic"
-RABBITMQ_EXCHANGE_TYPE = "topic"
-
 # Load environment variables
 load_dotenv()
+
+# RabbitMQ configuration
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
+RABBITMQ_EXCHANGE = "notification_topic"
+RABBITMQ_EXCHANGE_TYPE = "topic"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -54,7 +50,7 @@ MESSAGE_TEMPLATES = {
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
     "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
     #US3
-    "delivery.order.confirmation": "Hi there {customer_name}! Your order (ID: {order_id}) has been confirmed for delivery. Thank you for ordering with us!",
+    "delivery.order.confirmation": "Hi there {user_name}! Your order (ID: {order_id}) has been confirmed for delivery. Thank you for ordering with us!",
     "delivery.order.accepted": "Hi there {customer_name}! Your order (ID: {order_id}) has been assigned a driver, {driver_name}. Thank you for ordering with us!",
     "delivery.order.pickedup": "Good news {customer_name}! Your order (ID: {order_id}) has been picked up by your allocated driver. {driver_name} is on the way!",
     "delivery.order.delivered": "Hello {customer_name}! Your order (ID: {order_id}) has been delivered. Thank you for your purchase and we hope to see you soon!"
@@ -253,4 +249,5 @@ def health_check():
 if __name__ == '__main__':
     # Start RabbitMQ consumer in a separate thread
     threading.Thread(target=start_rabbitmq_consumer, daemon=True).start()
-    app.run(host='0.0.0.0', port=5005, debug=True)
+    port = int(os.environ.get('PORT', 5005))
+    app.run(host='0.0.0.0', port=port, debug=True)
