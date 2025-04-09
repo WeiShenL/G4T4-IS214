@@ -253,4 +253,4 @@ def health_check():
 if __name__ == '__main__':
     # Start RabbitMQ consumer in a separate thread
     threading.Thread(target=start_rabbitmq_consumer, daemon=True).start()
-    app.run(host='0.0.0.0', port=5007, debug=True)
+    app.run(host='0.0.0.0', port=5005, debug=True)

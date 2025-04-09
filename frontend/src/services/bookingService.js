@@ -1,8 +1,7 @@
-// bookingService.js
 
 export async function submitBooking(payload) {
     try {
-      const response = await fetch("http://localhost:5005/booking", {
+      const response = await fetch("http://localhost:5007/booking", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

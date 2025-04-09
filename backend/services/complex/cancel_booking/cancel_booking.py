@@ -98,7 +98,7 @@ def process_cancellation(reservation_id):
         try:
             # Call the payment service to process the refund
             refund_response = requests.post(
-                "http://localhost:5008/api/payment/refund",
+                "http://localhost:5006/api/payment/refund",
                 json={"payment_id": payment_id}
             )
             refund_response.raise_for_status()
@@ -151,4 +151,4 @@ def process_cancellation(reservation_id):
     
 if __name__ == '__main__':
     print("Starting cancel_booking service...")
-    app.run(host='0.0.0.0', port=5005, debug=True)
+    app.run(host='0.0.0.0', port=5008, debug=True)

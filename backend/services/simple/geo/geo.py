@@ -266,11 +266,11 @@ def delete_geospatial(order_id):
     
 if __name__ == '__main__':
     print("Starting Geospatial Service...")
-    app.run(host='0.0.0.0', port=7000, debug=True)
+    app.run(host='0.0.0.0', port=5013, debug=True)
 
 
 # test (dms endpoint before geo.py (geo.py post test))
-# http://localhost:7000/nearby-restaurants
+# http://localhost:5013/nearby-restaurants
 # {
 #     "code": 200,
 #     "data": {

@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 // Backend API endpoints
-const PAYMENT_API_URL = 'http://localhost:5008/api/payment';
+const PAYMENT_API_URL = 'http://localhost:5006/api/payment';
 
 // Stripe instance
 let stripePromise = null;

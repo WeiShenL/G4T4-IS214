@@ -225,7 +225,7 @@ def cancel_reservation(reservation_id):
         }), 500
  
  # update order_id and payment_id in the reservation
-@app.route('/reservation/reallocate/<int:reservation_id>', methods=['PATCH'])
+@app.route('/api/reservations/reallocate/<int:reservation_id>', methods=['PATCH'])
 def update_reservation(reservation_id):
     try:
         # Get the request data

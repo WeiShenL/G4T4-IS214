@@ -4,7 +4,7 @@ import { supabaseClient } from './supabase';
 // base URLs for the API
 const RESTAURANT_API_URL = 'http://localhost:5001/api';
 const RESERVATION_API_URL = 'http://localhost:5002/api';
-const CANCEL_BOOKING_URL = 'http://localhost:5005/cancel';
+const CANCEL_BOOKING_URL = 'http://localhost:5008/cancel';
 
 
 // get auth headers

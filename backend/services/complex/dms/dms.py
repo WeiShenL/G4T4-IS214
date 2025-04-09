@@ -15,7 +15,7 @@ DRIVER_SERVICE_URL = os.getenv('DRIVER_SERVICE_URL', 'http://localhost:5011')
 USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5000')
 RESTAURANT_SERVICE_URL = os.getenv('RESTAURANT_SERVICE_URL', 'http://localhost:5001')
 DRIVERDETAIL_SERVICE_URL = os.getenv('DRIVERDETAIL_SERVICE_URL', 'http://localhost:5012')
-GEOCODING_SERVICE_URL = os.getenv('GEOCODING_SERVICE_URL', 'http://localhost:7000')
+GEOCODING_SERVICE_URL = os.getenv('GEOCODING_SERVICE_URL', 'http://localhost:5013')
 
 def get_driver_address(driver_id):
     #Fetch the driver's address from the DRIVER_SERVICE_URL.
@@ -182,6 +182,6 @@ def get_delivery_management_data():
 
 if __name__ == '__main__':
     print("Starting Delivery Management Service...")
-    app.run(host='0.0.0.0', port=5100, debug=True)
+    app.run(host='0.0.0.0', port=5014, debug=True)
 
 

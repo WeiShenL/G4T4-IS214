@@ -249,7 +249,7 @@ export default {
               }
 
               // Trigger API
-              fetch('http://localhost:5101/accept-order', {
+              fetch('http://localhost:5015/accept-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -340,7 +340,7 @@ export default {
             });
 
             // Call API to mark order as picked up
-            fetch('http://localhost:5101/pick-up-order', {
+            fetch('http://localhost:5015/pick-up-order', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -383,7 +383,7 @@ export default {
       const driverId = routingData.value.driver.id;
       
       // 1. First, update driver stats through deliver-order API
-      fetch('http://localhost:5101/deliver-order', {
+      fetch('http://localhost:5015/deliver-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -403,7 +403,7 @@ export default {
           console.log('Order delivered successfully, driver stats updated:', data);
           
           // 2. Then delete the geospatial data
-          return fetch(`http://localhost:7000/delete-geospatial/${orderId}`, {
+          return fetch(`http://localhost:5013/delete-geospatial/${orderId}`, {
             method: 'DELETE'
           });
         })

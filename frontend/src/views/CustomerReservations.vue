@@ -375,7 +375,7 @@ export default {
         console.log('Starting cancellation process for reservation:', selectedReservation.value.reservation_id);
         
         // Call the cancel_booking microservice
-        const response = await fetch(`http://localhost:5005/cancel/${selectedReservation.value.reservation_id}`, {
+        const response = await fetch(`http://localhost:5008/cancel/${selectedReservation.value.reservation_id}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

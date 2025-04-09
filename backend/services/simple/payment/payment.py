@@ -186,5 +186,5 @@ def verify_payment(session_id):
         }), 500
 
 if __name__ == '__main__':
-    print(f"Starting payment service on port 5008")
-    app.run(host='0.0.0.0', port=5008, debug=True)
+    print(f"Starting payment service on port 5006")
+    app.run(host='0.0.0.0', port=5006, debug=True)

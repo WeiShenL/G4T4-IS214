@@ -75,14 +75,14 @@ def reallocate_reservation():
             
             if not user_id or user_id=="0":
                 try: 
-                 delete_response = requests.delete(f"http://localhost:5002/api/reservations/delete/{reservation_id}")
-                 delete_response.raise_for_status()
-                 print(f"Reservation {reservation_id} successfully deleted.")
+                    delete_response = requests.delete(f"http://localhost:5002/api/reservations/delete/{reservation_id}")
+                    delete_response.raise_for_status()
+                    print(f"Reservation {reservation_id} successfully deleted.")
                 except requests.exceptions.RequestException as e:
                     print(f"Failed to delete reservation {reservation_id}: {str(e)}")
                     return jsonify({"error": f"Failed to delete reservation: {str(e)}"}), 500
-
-            return jsonify({"message": "No users in waitlist. Reservation deleted."}), 200
+                
+                return jsonify({"message": "No users in waitlist. Reservation deleted."}), 200
                 
             print(f"Next user from waitlist: {user_id}")
         except requests.exceptions.RequestException as e:
@@ -156,7 +156,7 @@ def reallocate_reservation():
                 reservation_update_data["payment_id"] = payment_id
             
             reservation_response = requests.patch(
-                f"http://localhost:5002/reservation/reallocate/{reservation_id}", 
+                f"http://localhost:5002/api/reservations/reallocate/{reservation_id}", 
                 json=reservation_update_data
             )
             reservation_response.raise_for_status()

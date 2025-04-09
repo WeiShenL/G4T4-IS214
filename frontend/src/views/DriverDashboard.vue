@@ -204,7 +204,7 @@ export default {
         console.log('📍 Updated location via device Geolocation API');
 
         // 2. Now fetch the delivery management data
-        const deliveryUrl = `http://localhost:5100/delivery-management?driver_id=${driverId}`;
+        const deliveryUrl = `http://localhost:5014/delivery-management?driver_id=${driverId}`;
         console.log('👉 Fetching delivery data:', deliveryUrl);
         
         const response = await fetch(deliveryUrl);
