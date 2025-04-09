@@ -282,7 +282,8 @@ def create_booking():
             current_time = datetime.now().isoformat()
             waitlist_data = {
                 "user_id": user_id,
-                "time": current_time
+                "time": current_time,
+                "restaurant_id": restaurant_id
             }
             
             try:

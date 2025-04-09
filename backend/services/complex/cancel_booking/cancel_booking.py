@@ -97,6 +97,7 @@ def process_cancellation(reservation_id):
     # Extract user_id, table_no, refund_amount, and order_id from the response
     user_id = reservation_data.get("user_id")
     table_no = reservation_data.get("table_no")
+    restaurant_id= reservation_data.get("restaurant_id")
     refund_amount = reservation_data.get("refund_amount")
     payment_id = reservation_data.get("payment_id")
     order_id = reservation_data.get("order_id")  
@@ -163,7 +164,7 @@ def process_cancellation(reservation_id):
         publish_message("reservation.cancellation", notification_data)
         
         # Trigger reallocation
-        reallocation_data = {"reservation_id": reservation_id}
+        reallocation_data = {"reservation_id": reservation_id, "restaurant_id": restaurant_id}
         requests.post("http://localhost:5009/reallocate", json=reallocation_data)
         
         return jsonify({

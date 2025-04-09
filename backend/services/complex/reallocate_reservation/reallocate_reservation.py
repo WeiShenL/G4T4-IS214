@@ -83,6 +83,7 @@ def reallocate_reservation():
     try:
         data = request.get_json()
         reservation_id = data.get("reservation_id")
+        restaurant_id= data.get("restaurant_id")
 
         if not reservation_id:
             return jsonify({"error": "Missing reservation_id"}), 400
@@ -92,7 +93,7 @@ def reallocate_reservation():
         # Call OutSystems waitlist service to get the next user in the waitlist
         try:
             print("Calling OutSystems Waitlist API to get next user...")
-            waitlist_response = requests.get("https://qks.outsystemscloud.com/Waitlist_Service/rest/waitlist/Get_nextUser")
+            waitlist_response = requests.get(f"https://qks.outsystemscloud.com/Waitlist_Service/rest/waitlist/Get_nextUser?restaurant_id={restaurant_id}")
             waitlist_response.raise_for_status()
             waitlist_data = waitlist_response.json()
             user_id = waitlist_data.get("user_id")

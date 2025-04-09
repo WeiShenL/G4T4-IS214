@@ -152,6 +152,7 @@ def cancel_reservation(reservation_id):
         
         # Store important data before updating
         refund_amount = reservation.get('price', 0)
+        restaurant_id= reservation.get('restaurant_id')
         table_no = reservation.get('table_no')
         user_id = reservation.get('user_id')
         payment_id = reservation.get('payment_id')
@@ -177,6 +178,7 @@ def cancel_reservation(reservation_id):
         
         return jsonify({
             "reservation_id": reservation_id,
+            "restaurant_id": restaurant_id,
             "user_id": user_id,
             "table_no": table_no,
             "refund_amount": refund_amount,
