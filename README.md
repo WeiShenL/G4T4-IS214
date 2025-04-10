@@ -42,7 +42,7 @@ npm run dev
 This will launch the application, typically at [http://localhost:5173](http://localhost:5173).
 
 ## Technical Architecture Diagram
-![image]()
+![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/Screenshot%202025-04-11%20at%207.21.15%E2%80%AFAM.png?token=GHSAT0AAAAAAC7CYRFKT7UNV3TUYVD2MJSQZ7YMDLQ)
 
 ## Frameworks and Databases Utilised
 <p align="center"><strong>Microservices and UI</strong></p>
