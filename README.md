@@ -1,7 +1,7 @@
 # G4T4-IS214
 
 ## FeastFinder
-insert ss pic here
+![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/FeastFinder.png?token=GHSAT0AAAAAAC7CYRFLAZQW36R2JG7XEGJCZ7YHN3Q)
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ npm run dev
 ```
 This will launch the application, typically at [http://localhost:5173](http://localhost:5173).
 
-## Technical Architecture Diagram (not done)
+## Technical Architecture Diagram
 ![image]()
 
 ## Frameworks and Databases Utilised
@@ -100,6 +100,14 @@ This will launch the application, typically at [http://localhost:5173](http://lo
 <i>REST API</i>
 </p> 
 <br>
+
+<p align="center"><strong>API Gateway</strong></p>
+<p align="center">
+<a href="https://konghq.com/"><img src="https://konghq.com/wp-content/uploads/2018/08/kong-combination-mark-color-256px.png" alt="Kong API Gateway" width="88"/></a>
+<br>
+<i>Kong</i>
+</p>
+<br> 
 
 <p align="center"><strong>Deployment & Containerization</strong></p>
 <p align="center">
