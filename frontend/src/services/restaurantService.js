@@ -168,20 +168,23 @@ export const getRestaurantsByAvailability = async (availability) => {
   }
 };
 
-// this is for filtering (might not need though)
-export const getRestaurantsByCuisine = async (cuisine) => {
+// Get open restaurants
+export const getOpenRestaurants = async () => {
   try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/cuisine/${cuisine}`);
+    // Use the existing availability endpoint with parameter 1 (for open)
+    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/1`);
     const data = await response.json();
+    
     if (data.code === 200) {
-      return data.data.restaurants;
+      // Return only the first 3 restaurants
+      return data.data.restaurants.slice(0, 3);
     } else if (data.code === 404) {
       return [];
     } else {
-      throw new Error(data.message || 'Failed to fetch restaurants by cuisine');
+      throw new Error(data.message || 'Failed to fetch open restaurants');
     }
   } catch (error) {
-    console.error('Error fetching restaurants by cuisine:', error);
+    console.error('Error fetching open restaurants:', error);
     throw error;
   }
 };

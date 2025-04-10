@@ -173,7 +173,8 @@
 import { ref, onMounted, onUnmounted } from 'vue'; 
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut, getCurrentUser } from '@/services/supabase';
-import { getUserReservations, getAllRestaurants } from '@/services/restaurantService';
+import { getUserReservations } from '@/services/reservationService';
+import { getAllRestaurants } from '@/services/restaurantService';
 import { initStripe, processRefund } from '@/services/stripeService';
 import { Modal } from 'bootstrap'; 
 

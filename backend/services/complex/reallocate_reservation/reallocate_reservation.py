@@ -189,17 +189,7 @@ def reallocate_reservation():
             }
             
             publish_to_rabbitmq("reallocation.notice", notification_data)
-            
-            # Remove user from waitlist
-            try:
-                print(f"Removing user {user_id} from waitlist")
-                remove_response = requests.delete(f"https://qks.outsystemscloud.com/Waitlist_Service/rest/waitlist/Delete_user?id={user_id}")
-                remove_response.raise_for_status()
-                print(f"User {user_id} removed from waitlist")
-            except requests.exceptions.RequestException as e:
-                print(f"Error removing user from waitlist: {str(e)}")
-                # Continue even if removal fails
-            
+        
             return jsonify({
                 "message": "Reallocation successful",
                 "user_id": user_id,

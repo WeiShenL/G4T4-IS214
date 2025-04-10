@@ -2,7 +2,6 @@
 import { supabaseClient } from './supabase';
 
 // base URLs for the API
-const RESTAURANT_API_URL = 'http://localhost:5001/api';
 const RESERVATION_API_URL = 'http://localhost:5002/api';
 const CANCEL_BOOKING_URL = 'http://localhost:5008/cancel';
 const REALLOCATION_URL = 'http://localhost:5002/reservation/reallocate_confirm_booking';
@@ -17,42 +16,6 @@ const getAuthHeaders = async () => {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
-};
-
-// Get all restaurants
-export const getAllRestaurants = async () => {
-  try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants`);
-    const data = await response.json();
-    
-    if (data.code === 200) {
-      return data.data.restaurants;
-    } else {
-      throw new Error(data.message || 'Failed to fetch restaurants');
-    }
-  } catch (error) {
-    console.error('Error fetching restaurants:', error);
-    throw error;
-  }
-};
-
-// Get restaurant by ID
-export const getRestaurantById = async (id) => {
-  try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/${id}`);
-    const data = await response.json();
-    
-    if (data.code === 200) {
-      return data.data;
-    } else if (data.code === 404) {
-      return null;
-    } else {
-      throw new Error(data.message || `Failed to fetch restaurant with ID ${id}`);
-    }
-  } catch (error) {
-    console.error(`Error fetching restaurant with ID ${id}:`, error);
-    throw error;
-  }
 };
 
 // Create a reservation
@@ -200,6 +163,7 @@ export const acceptReallocation = async (acceptData) => {
       message: 'Reservation confirmed successfully',
       data: data
     };
+    
   } catch (error) {
     console.error('Error accepting reallocation:', error);
     throw error;
@@ -215,15 +179,16 @@ export const declineReallocation = async (reservationId) => {
     
     const headers = await getAuthHeaders();
     
-    // For now, we'll just update the reservation status to 'Declined'
-    // In a real implementation, this would call a backend API to decline and process the next user
-    console.log(`Declining reallocation for reservation ID: ${reservationId}`);
+    const response = await fetch(`${REALLOCATION_URL}/decline/${reservationId}`, {
+      method: 'POST',
+      headers
+    });
     
-    // Mock successful response
-    return {
-      success: true,
-      message: 'Reservation offer declined successfully'
-    };
+    if (!response.ok) {
+      throw new Error('Failed to decline reallocation');
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error declining reallocation:', error);
     throw error;
@@ -266,41 +231,5 @@ export const cancelReservation = async (reservationId) => {
       message: error.message || 'An error occurred during cancellation',
       error: error
     };
-  }
-};
-
-// this is for filtering (might not need though)
-export const getRestaurantsByAvailability = async (availability) => {
-  try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/${availability}`);
-    const data = await response.json();
-    if (data.code === 200) {
-      return data.data.restaurants;
-    } else if (data.code === 404) {
-      return [];
-    } else {
-      throw new Error(data.message || 'Failed to fetch restaurants by availability');
-    }
-  } catch (error) {
-    console.error('Error fetching restaurants by availability:', error);
-    throw error;
-  }
-};
-
-// this is for filtering (might not need though)
-export const getRestaurantsByCuisine = async (cuisine) => {
-  try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/cuisine/${cuisine}`);
-    const data = await response.json();
-    if (data.code === 200) {
-      return data.data.restaurants;
-    } else if (data.code === 404) {
-      return [];
-    } else {
-      throw new Error(data.message || 'Failed to fetch restaurants by cuisine');
-    }
-  } catch (error) {
-    console.error('Error fetching restaurants by cuisine:', error);
-    throw error;
   }
 };

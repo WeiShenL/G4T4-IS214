@@ -37,7 +37,7 @@
               <h2>Restaurants</h2>
               <p>Discover and explore restaurants near you</p>
               
-              <!-- Mode Selection Buttons -->
+              <!-- Mode Selection Buttons (not implemented)
               <div class="mode-selection mt-3">
                 <button 
                   class="btn btn-lg me-2" 
@@ -53,7 +53,7 @@
                 >
                   <i class="fas fa-motorcycle me-2"></i>Delivery
                 </button>
-              </div>
+              </div> -->
               
               <!-- Mode Indicator -->
               <div class="mode-indicator mt-3" v-if="orderType === 'delivery'">
@@ -163,9 +163,6 @@
                   :disabled="!restaurant.availability"
                 >
                   {{ orderType === 'delivery' ? 'Order & Delivery' : 'Order & Book' }}
-                </button>
-                <button class="btn btn-outline-primary btn-sm" @click="viewRestaurantDetails(restaurant)">
-                  View Details
                 </button>
               </div>
             </div>
@@ -331,12 +328,6 @@ export default {
       router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
     };
     
-    // restaurant details pg
-    const viewRestaurantDetails = (restaurant) => {
-      // for now, redirect to the menu page instead of having a details pg
-      router.push(`/restaurant/${restaurant.restaurant_id}/menu`);
-    };
-    
     // Logout function
     const logout = async () => {
       try {
@@ -378,7 +369,6 @@ export default {
       buttonText,
       filterRestaurants,
       bookRestaurant,
-      viewRestaurantDetails,
       logout,
       toggleDropdown,
       setOrderType
@@ -470,7 +460,7 @@ export default {
   padding: 1.5rem;
   border-top: 1px solid #f1f1f1;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
 }
 
 .btn-outline-primary {

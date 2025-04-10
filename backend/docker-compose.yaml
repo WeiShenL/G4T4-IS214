@@ -160,8 +160,8 @@ services:
 
   # User Scenario 2 Services are hereeee (composites)
   
-  accept-booking-service:
-    build: ./services/complex/accept_booking
+  accept-reallocation-service:
+    build: ./services/complex/accept_reallocation
     depends_on:
       rabbitmq:
         condition: service_healthy
