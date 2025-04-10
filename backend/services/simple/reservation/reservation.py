@@ -24,30 +24,6 @@ def health_check():
         "service": "reservation-service",
         "timestamp": datetime.now().isoformat()
     }), 200
-    
-# Retrieve all reservations
-@app.route("/api/reservations", methods=['GET'])
-def get_all_reservations():
-    try:
-        response = supabase.table('reservation').select('*').execute()
-        reservation_list = response.data
-        
-        if reservation_list:
-            return jsonify({
-                "code": 200,
-                "data": {
-                    "reservations": reservation_list
-                }
-            })
-        return jsonify({
-            "code": 404,
-            "message": "No reservations found."
-        }), 404
-    except Exception as e:
-        return jsonify({
-            "code": 500,
-            "message": f"An error occurred: {str(e)}"
-        }), 500
 
 # Retrieve reservation using id
 @app.route("/api/reservations/<int:reservation_id>", methods=['GET'])
