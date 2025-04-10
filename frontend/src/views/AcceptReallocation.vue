@@ -160,14 +160,14 @@
                         Accept & Book This Table
                       </button>
                       
-                      <!-- <button 
+                      <button 
                         class="btn btn-lg btn-outline-danger" 
                         @click="declineBooking"
                         :disabled="isAccepting"
                       >
                         <i class="fas fa-times-circle me-2"></i>
                         Decline Offer
-                      </button> -->
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -203,7 +203,7 @@
   import { useRouter } from 'vue-router';
   import { getCurrentUser, signOut } from '@/services/supabase';
   import { getRestaurantById } from '@/services/restaurantService';
-  import { acceptReallocation, declineReallocation } from '@/services/reservationService';
+  import { acceptReallocation, cancelReallocation } from '@/services/reservationService';
   
   export default {
     name: 'AcceptBooking',
@@ -410,8 +410,8 @@
           if (confirm('Are you sure you want to decline this table offer?')) {
             isLoading.value = true;
             
-            // Call the API to decline the reservation
-            await declineReallocation(reservation.value.reservation_id);
+            
+            await cancelReallocation(reservation.value.reservation_id);
             
             // Clear the pending reservation and redirect to dashboard
             localStorage.removeItem('pendingReservation');

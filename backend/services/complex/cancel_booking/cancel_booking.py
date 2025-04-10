@@ -155,7 +155,7 @@ def process_cancellation(reservation_id):
         
         publish_to_rabbitmq("reservation.cancellation", notification_data)
         
-        # Trigger reallocation
+        # Trigger reallocation (call reallocation service)
         reallocation_data = {"reservation_id": reservation_id, "restaurant_id": restaurant_id}
         requests.post(f"{REALLOCATE_RESERVATION_SERVICE_URL}/api/reallocate", json=reallocation_data)
         
@@ -168,7 +168,13 @@ def process_cancellation(reservation_id):
     except Exception as e:
         print(f"Error triggering notification: {str(e)}")
         return jsonify({"error": f"Error triggering notification or reallocation: {str(e)}"}), 500
-    
+
+# calls the existing method
+@app.route('/api/cancel/reallocation/<int:reservation_id>', methods=['POST'])
+def cancel_reallocation(reservation_id):
+    # Simply call the existing cancellation method - it already does everything needed
+    return process_cancellation(reservation_id)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5008))
     print(f"Starting cancel_booking service on port {port}...")

@@ -180,8 +180,8 @@ export const acceptReallocation = async (acceptData) => {
   }
 };
 
-// Decline a reallocation
-export const declineReallocation = async (reservationId) => {
+// Cancel a reallocation (give to next customer in waitlist)
+export const cancelReallocation = async (reservationId) => {
   try {
     if (!reservationId) {
       throw new Error('Reservation ID is required');
@@ -189,19 +189,32 @@ export const declineReallocation = async (reservationId) => {
     
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${REALLOCATION_URL}/decline/${reservationId}`, {
+    console.log(`Sending reallocation cancellation request to: ${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/reallocation/${reservationId}`);
+    
+    const response = await fetch(`${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/reallocation/${reservationId}`, {
       method: 'POST',
       headers
     });
     
+    const data = await response.json();
+    console.log('Reallocation cancellation API response:', data);
+    
     if (!response.ok) {
-      throw new Error('Failed to decline reallocation');
+      throw new Error(data.error || 'Failed to cancel reallocated reservation');
     }
     
-    return await response.json();
+    return {
+      success: true,
+      message: data.message || 'Reallocated reservation cancelled successfully',
+      data: data
+    };
   } catch (error) {
-    console.error('Error declining reallocation:', error);
-    throw error;
+    console.error('Error cancelling reallocated reservation:', error);
+    return {
+      success: false,
+      message: error.message || 'An error occurred during reallocation cancellation',
+      error: error
+    };
   }
 };
 
