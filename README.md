@@ -1,7 +1,7 @@
 # G4T4-IS214
 
 ## FeastFinder
-![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/FeastFinder.png?token=GHSAT0AAAAAAC7CYRFLAZQW36R2JG7XEGJCZ7YHN3Q)
+![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/FeastFinder.png?token=GHSAT0AAAAAAC7CYRFLZLZXOXL2HL5UBVLYZ7YMALQ)
 
 ## Prerequisites
 
