@@ -152,21 +152,12 @@
                       </div>
                       
                       <button 
-                        class="btn btn-lg btn-success me-3" 
+                        class="btn btn-lg btn-success" 
                         @click="acceptBooking"
                         :disabled="isAccepting || !partySize || !bookingDate || !bookingTime"
                       >
                         <i class="fas fa-check-circle me-2"></i>
                         Accept & Book This Table
-                      </button>
-                      
-                      <button 
-                        class="btn btn-lg btn-outline-danger" 
-                        @click="declineBooking"
-                        :disabled="isAccepting"
-                      >
-                        <i class="fas fa-times-circle me-2"></i>
-                        Decline Offer
                       </button>
                     </div>
                   </div>
@@ -195,57 +186,6 @@
           </div>
         </div>
       </div>
-      
-      <!-- Cancellation Confirmation Modal -->
-      <div class="modal fade" id="declineModal" tabindex="-1" aria-labelledby="declineModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content" v-if="reservation">
-            <div class="modal-header">
-              <h5 class="modal-title" id="declineModalLabel">Confirm Decline</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="isProcessingDecline"></button>
-            </div>
-            
-            <!-- Loading State -->
-            <div v-if="isProcessingDecline" class="modal-body text-center p-4">
-              <div class="spinner-border text-primary mb-3" role="status">
-                <span class="visually-hidden">Processing decline...</span>
-              </div>
-              <p>Processing your decline request...</p>
-              <small class="text-muted">This may take a moment to complete</small>
-            </div>
-            
-            <!-- Success State -->
-            <div v-else-if="declineSuccess" class="modal-body text-center p-4">
-              <div class="mb-3 text-success">
-                <i class="fas fa-check-circle fa-3x"></i>
-              </div>
-              <h4 class="text-success">Table Offer Declined!</h4>
-              <p>The table offer has been declined and will be offered to the next customer in the waitlist.</p>
-            </div>
-            
-            <!-- Error State -->
-            <div v-else-if="declineError" class="modal-body">
-              <div class="alert alert-danger mb-3">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                {{ declineError }}
-              </div>
-              <p>Are you sure you want to decline this table offer at <strong>{{ restaurantName }}</strong>?</p>
-              <p class="text-danger">This action cannot be undone.</p>
-            </div>
-            
-            <!-- Confirmation State (Default) -->
-            <div v-else class="modal-body">
-              <p>Are you sure you want to decline this table offer at <strong>{{ restaurantName }}</strong>?</p>
-              <p class="text-danger">This table will be offered to the next customer in the waitlist.</p>
-            </div>
-            
-            <div class="modal-footer" v-if="!isProcessingDecline && !declineSuccess">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Offer</button>
-              <button type="button" class="btn btn-danger" @click="confirmDecline">Confirm Decline</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </template>
   
@@ -254,8 +194,7 @@
   import { useRouter } from 'vue-router';
   import { getCurrentUser, signOut } from '@/services/supabase';
   import { getRestaurantById } from '@/services/restaurantService';
-  import { acceptReallocation, cancelReallocation } from '@/services/reservationService';
-  import { Modal } from 'bootstrap';
+  import { acceptReallocation } from '@/services/reservationService';
   
   export default {
     name: 'AcceptBooking',
@@ -273,12 +212,6 @@
       const errorMessage = ref('');
       const bookingAccepted = ref(false);
       
-      // Decline modal states
-      const declineModalInstance = ref(null);
-      const isProcessingDecline = ref(false);
-      const declineSuccess = ref(false);
-      const declineError = ref('');
-      
       // Format date from ISO string
       const formatDate = (isoString) => {
         if (!isoString) return 'N/A';
@@ -291,19 +224,6 @@
         if (!isoString) return 'N/A';
         const date = new Date(isoString);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      };
-      
-      // Initialize modals
-      const initModals = () => {
-        try {
-          const declineModalElement = document.getElementById('declineModal');
-          if (declineModalElement) {
-            declineModalInstance.value = new Modal(declineModalElement);
-          }
-        } catch (error) {
-          console.error('Error initializing Bootstrap modal:', error);
-          errorMessage.value = 'Could not initialize the decline dialog.';
-        }
       };
       
       // Load data when component mounts
@@ -331,9 +251,6 @@
             const minutes = now.getMinutes().toString().padStart(2, '0');
             bookingTime.value = `${hours}:${minutes}`;
           }
-          
-          // Initialize the modal
-          initModals();
         } catch (error) {
           console.error('Error during initialization:', error);
           errorMessage.value = 'An error occurred while loading the page. Please try again.';
@@ -478,70 +395,6 @@
         }
       };
       
-      // Decline booking - show confirmation modal
-      const declineBooking = () => {
-        declineError.value = '';
-        declineSuccess.value = false;
-        isProcessingDecline.value = false;
-        
-        if (declineModalInstance.value) {
-          declineModalInstance.value.show();
-        } else {
-          console.warn("Modal instance not found. Attempting re-initialization.");
-          initModals();
-          if (declineModalInstance.value) {
-            declineModalInstance.value.show();
-          } else {
-            errorMessage.value = 'Decline dialog failed to open. Please refresh.';
-            console.error("Modal instance could not be created or found.");
-          }
-        }
-      };
-      
-      // Confirm decline 
-      const confirmDecline = async () => {
-        if (!reservation.value) {
-          return;
-        }
-        
-        try {
-          isProcessingDecline.value = true;
-          declineError.value = '';
-          
-          console.log('Starting decline process for reservation:', reservation.value.reservation_id);
-          
-          // Call the cancelReallocation API
-          const result = await cancelReallocation(reservation.value.reservation_id);
-          
-          if (!result.success) {
-            throw new Error(result.message || 'Failed to decline table offer');
-          }
-          
-          // Update UI to show success
-          declineSuccess.value = true;
-          
-          // Hide modal after a short delay and redirect
-          setTimeout(() => {
-            if (declineModalInstance.value) {
-              declineModalInstance.value.hide();
-            }
-            
-            // Clear the pending reservation and redirect to dashboard
-            localStorage.removeItem('pendingReservation');
-            
-            // Redirect after modal is hidden
-            setTimeout(() => {
-              router.push('/customer-dashboard');
-            }, 500);
-          }, 2000);
-          
-        } catch (error) {
-          console.error('Error during decline process:', error);
-          declineError.value = error.message || 'An error occurred while declining the offer';
-          isProcessingDecline.value = false;
-        }
-      };
-      
       // Logout function
       const logout = async () => {
         try {
@@ -577,11 +430,6 @@
         formatDate,
         formatTime,
         acceptBooking,
-        declineBooking,
-        confirmDecline,
-        isProcessingDecline,
-        declineSuccess,
-        declineError,
         logout
       };
     }

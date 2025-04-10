@@ -1,7 +1,7 @@
 # G4T4-IS214
 
 ## FeastFinder
-![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/FeastFinder.png?token=GHSAT0AAAAAAC7CYRFLAZQW36R2JG7XEGJCZ7YHN3Q)
+![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/FeastFinder.png?token=GHSAT0AAAAAAC7CYRFLZLZXOXL2HL5UBVLYZ7YMALQ)
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ npm run dev
 This will launch the application, typically at [http://localhost:5173](http://localhost:5173).
 
 ## Technical Architecture Diagram
-![image]()
+![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/Screenshot%202025-04-11%20at%207.25.24%E2%80%AFAM.png?token=GHSAT0AAAAAAC7CYRFKXP36KBIBTS6DKPCSZ7YMGOA)
 
 ## Frameworks and Databases Utilised
 <p align="center"><strong>Microservices and UI</strong></p>
