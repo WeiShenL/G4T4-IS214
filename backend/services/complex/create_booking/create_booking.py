@@ -84,6 +84,34 @@ def create_booking():
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
         
+        # Get user details for notifications do this for both dine-in and delivery!!
+        user_id = data.get("user_id")
+        user_name = "Customer"
+        user_phone = ""
+        try:
+            user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            
+            # Extract the user details we need do this for both dine-in and delivery!!
+            user_name = user_data.get("data", {}).get("customer_name", "Customer")
+            user_phone = user_data.get("data", {}).get("phone_number", "")
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch user details: {str(e)}")
+            
+        # Get restaurant details - retrieve once for both dine-in and delivery!!
+        restaurant_id = data['restaurant_id']
+        restaurant_name = f"Restaurant #{restaurant_id}"
+        try:
+            restaurant_response = requests.get(f"{RESTAURANT_SERVICE_URL}/api/restaurants/{restaurant_id}")
+            restaurant_response.raise_for_status()
+            restaurant_data = restaurant_response.json()
+            
+            # Extract restaurant name do this for both dine-in and delivery!!
+            restaurant_name = restaurant_data.get("data", {}).get("name", f"Restaurant #{restaurant_id}")
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch restaurant details: {str(e)}")
+        
         # Create the order with the appropriate order_type (dine_in or delivery)
         order_data = {
             "user_id": data['user_id'],
@@ -122,34 +150,6 @@ def create_booking():
             # For delivery orders, we're done - no reservation needed
             # Queue a delivery confirmation message to RabbitMQ
             try:
-                # Get user details for notifications
-                user_id = data.get("user_id")
-                try:
-                    user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
-                    user_response.raise_for_status()
-                    user_data = user_response.json()
-                    
-                    # Extract the user details we need
-                    user_name = user_data.get("data", {}).get("customer_name", "Customer")
-                    user_phone = user_data.get("data", {}).get("phone_number", "")
-                except requests.exceptions.RequestException as e:
-                    print(f"Failed to fetch user details: {str(e)}")
-                    user_name = "Customer"
-                    user_phone = ""
-                    
-                # Get restaurant details
-                restaurant_id = data['restaurant_id']
-                try:
-                    restaurant_response = requests.get(f"{RESTAURANT_SERVICE_URL}/api/restaurants/{restaurant_id}")
-                    restaurant_response.raise_for_status()
-                    restaurant_data = restaurant_response.json()
-                    
-                    # Extract restaurant name
-                    restaurant_name = restaurant_data.get("data", {}).get("name", f"Restaurant #{restaurant_id}")
-                except requests.exceptions.RequestException as e:
-                    print(f"Failed to fetch restaurant details: {str(e)}")
-                    restaurant_name = f"Restaurant #{restaurant_id}"
-                
                 notification_data = {
                     "order_id": order_id,
                     "user_id": user_id,
@@ -194,7 +194,6 @@ def create_booking():
         
         # here, means is a dine-in order alr
         # Get restaurant capacity and current reservations
-        restaurant_id = data['restaurant_id']
         print(f"Checking capacity for restaurant {restaurant_id}")
         capacity_response = requests.get(
             f"{RESTAURANT_SERVICE_URL}/api/restaurants/capacity/{restaurant_id}"
@@ -229,33 +228,6 @@ def create_booking():
         
         print(f"Restaurant capacity: {restaurant_capacity}, Current dine-in reservations: {current_reservations}")
         
-        # Get user details for notifications
-        user_id = data.get("user_id")
-        try:
-            user_response = requests.get(f"{USER_SERVICE_URL}/api/user/{user_id}")
-            user_response.raise_for_status()
-            user_data = user_response.json()
-            
-            # Extract the user details we need
-            user_name = user_data.get("data", {}).get("customer_name", "Customer")
-            user_phone = user_data.get("data", {}).get("phone_number", "")
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch user details: {str(e)}")
-            user_name = "Customer"
-            user_phone = ""
-            
-        # Get restaurant details
-        try:
-            restaurant_response = requests.get(f"{RESTAURANT_SERVICE_URL}/api/restaurants/{restaurant_id}")
-            restaurant_response.raise_for_status()
-            restaurant_data = restaurant_response.json()
-            
-            # Extract restaurant name
-            restaurant_name = restaurant_data.get("data", {}).get("name", f"Restaurant #{restaurant_id}")
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch restaurant details: {str(e)}")
-            restaurant_name = f"Restaurant #{restaurant_id}"
-            
         # Check if restaurant is at capacity
         if current_reservations >= restaurant_capacity:
             print(f"Restaurant at capacity. Adding user to waitlist.")
