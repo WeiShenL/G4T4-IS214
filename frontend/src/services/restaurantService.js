@@ -185,3 +185,24 @@ export const getRestaurantsByCuisine = async (cuisine) => {
     throw error;
   }
 };
+
+// Get open restaurants
+export const getOpenRestaurants = async () => {
+  try {
+    // Use the existing availability endpoint with parameter 1 (for open)
+    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/1`);
+    const data = await response.json();
+    
+    if (data.code === 200) {
+      // Return only the first 3 restaurants
+      return data.data.restaurants.slice(0, 3);
+    } else if (data.code === 404) {
+      return [];
+    } else {
+      throw new Error(data.message || 'Failed to fetch open restaurants');
+    }
+  } catch (error) {
+    console.error('Error fetching open restaurants:', error);
+    throw error;
+  }
+};

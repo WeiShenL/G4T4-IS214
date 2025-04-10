@@ -126,3 +126,17 @@ create table public.user_types (
     )
   )
 ) TABLESPACE pg_default;
+
+
+-- Add Pasta Paradise restaurant
+INSERT INTO public.restaurant (capacity, availability, name, address, rating, cuisine)
+VALUES (50, true, 'Pasta Paradise', '123 Pasta Lane, Singapore 123456', '4.7', 'Italian')
+RETURNING restaurant_id;
+
+-- Add pasta packages to menu (assuming restaurant_id is 5 yayy, adjust if needed)
+INSERT INTO public.menu (restaurant_id, item_name, description, price)
+VALUES 
+(2, 'Family Pasta Feast', 'Package includes: 2 pasta mains, 2 sides, 4 drinks and dessert', 59.99),
+(2, 'Date Night Combo', 'Package includes: 2 premium pasta dishes, 2 glasses of wine, and tiramisu to share', 49.99),
+(2, 'Solo Pasta Delight', 'Package includes: 1 pasta main, 1 side salad, 1 drink', 24.99),
+(2, 'Party Platter Special', 'Package includes: 5 pasta mains, 3 sides, garlic bread, and dessert platter', 119.99);

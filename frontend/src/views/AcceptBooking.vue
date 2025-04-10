@@ -370,13 +370,14 @@
           const bookingDateTime = new Date(`${bookingDate.value}T${bookingTime.value}`);
           
           // Prepare the data for accepting the reservation
+          // toISOString converts time to UTC not UTC+8 so need to run thru conversion done at frontend
           const acceptData = {
             reservation_id: reservation.value.reservation_id,
             user_id: user.value.id,
             username: user.value.customerName,
             phone_number: user.value.phoneNumber,
             count: partySize.value,
-            booking_time: bookingDateTime.toISOString()
+            booking_time: new Date(bookingDateTime.getTime() - (bookingDateTime.getTimezoneOffset() * 60000)).toISOString()
           };
           
           console.log('Accepting reservation with data:', acceptData);

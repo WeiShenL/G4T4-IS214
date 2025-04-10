@@ -85,13 +85,62 @@
         <div v-if="!isLoading && !errorMessage">
           <!-- Featured Restaurants -->
           <div class="row mb-4">
-            <div class="col-12">
+            <div class="col-12 mb-4">
               <h3 class="section-heading">Featured Restaurants</h3>
               <p class="section-subheading">Popular places to order from</p>
             </div>
-            <!-- Restaurants would be loaded here -->
-            <div class="col-12 text-center">
-              <p>More restaurants coming soon!</p>
+            
+            <!-- Restaurant loading state -->
+            <div v-if="loadingRestaurants" class="col-12 text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading restaurants...</span>
+              </div>
+              <p class="mt-2">Finding open restaurants near you...</p>
+            </div>
+            
+            <!-- No restaurants available -->
+            <div v-else-if="openRestaurants.length === 0" class="col-12 text-center py-4">
+              <div class="no-restaurants">
+                <i class="fas fa-store-slash mb-3"></i>
+                <p>No featured restaurants at this time. Please check back later!</p>
+              </div>
+            </div>
+            
+            <!-- Restaurant gallery -->
+            <div v-else class="col-12">
+              <div class="restaurants-list">
+                <div v-for="(restaurant, index) in openRestaurants" :key="restaurant.id" class="restaurant-row">
+                  <div class="row align-items-center">
+                    <!-- Restaurant Image -->
+                    <div class="col-md-3">
+                      <div class="restaurant-image" @click="router.push('/restaurant/' + restaurant.id)">
+                        <img :src="getRestaurantImage(index + 1)" alt="Restaurant image">
+                      </div>
+                    </div>
+                    
+                    <!-- Restaurant Info -->
+                    <div class="col-md-9">
+                      <div class="restaurant-details">
+                        <h4 class="restaurant-name">{{ restaurant.name }}</h4>
+                        <div class="restaurant-meta mb-2">
+                          <span class="badge bg-light text-dark me-2">{{ restaurant.cuisine || 'Various Cuisine' }}</span>
+                        </div>
+                        <p class="restaurant-description">
+                          {{ restaurant.description || 'A wonderful dining experience with delicious food and excellent service.' }}
+                        </p>
+                        
+                        <!-- Reviews -->
+                        <div class="reviews">
+                          <div class="review">
+                            <div class="review-author">{{ getReviewAuthor(index, 0) }}</div>
+                            <div class="review-content">"{{ getReviewContent(index, 0) }}"</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -105,6 +154,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabaseClient, signOut } from '@/services/supabase';
 import { checkPendingReservations } from '@/services/reservationService';
+import { getOpenRestaurants } from '@/services/restaurantService';
 
 const setOrderType = async (type) => {
   // Store order_type in localStorage for temporary use
@@ -118,8 +168,25 @@ export default {
     const user = ref(null);
     const isLoading = ref(true);
     const errorMessage = ref('');
-    const searchQuery = ref('');
     const hasPendingReservation = ref(false);
+    const openRestaurants = ref([]);
+    const loadingRestaurants = ref(false);
+    
+    // Restaurant image mapping (hardcoded)
+    const restaurantImages = {
+      1: new URL('../assets/images/restaurants/restaurant1.jpg', import.meta.url).href,
+      2: new URL('../assets/images/restaurants/restaurant2.jpg', import.meta.url).href,
+      3: new URL('../assets/images/restaurants/restaurant3.jpg', import.meta.url).href,
+      4: new URL('../assets/images/restaurants/restaurant4.jpg', import.meta.url).href,
+      5: new URL('../assets/images/restaurants/restaurant5.jpg', import.meta.url).href,
+      // Default for any restaurant without matching ID
+      default: new URL('../assets/images/restaurants/default-restaurant.jpg', import.meta.url).href
+    };
+    
+    // Function to get restaurant image
+    const getRestaurantImage = (id) => {
+      return restaurantImages[id] || restaurantImages.default;
+    };
     
     const quickActions = [
       {
@@ -154,6 +221,42 @@ export default {
     const toggleDropdown = (event) => {
       const dropdownMenu = event.target.closest('.dropdown').querySelector('.dropdown-menu');
       dropdownMenu.classList.toggle('show');
+    };
+    
+    // Hardcoded review authors
+    const reviewAuthors = [
+      ['John D.', 'Sarah M.', 'Michael T.'],
+      ['Emily L.', 'David W.', 'Jessica K.'],
+      ['Robert P.', 'Michelle S.', 'Thomas G.']
+    ];
+    
+    // Hardcoded review content
+    const reviewContents = [
+      [
+        'The food was amazing! Definitely coming back soon.',
+        'Great atmosphere and friendly staff. Highly recommend!',
+        'Best dining experience I\'ve had in months!'
+      ],
+      [
+        'The chef\'s special was incredible. Must try!',
+        'Love the ambiance and the quick service.',
+        'Perfect place for a romantic dinner.'
+      ],
+      [
+        'The menu variety is impressive. Something for everyone!',
+        'Fresh ingredients and authentic flavors. Loved it!',
+        'Wonderful place to bring the family for dinner.'
+      ]
+    ];
+    
+    // Function to get review author
+    const getReviewAuthor = (restaurantIndex, reviewIndex) => {
+      return reviewAuthors[restaurantIndex % reviewAuthors.length][reviewIndex % 3];
+    };
+    
+    // Function to get review content
+    const getReviewContent = (restaurantIndex, reviewIndex) => {
+      return reviewContents[restaurantIndex % reviewContents.length][reviewIndex % 3];
     };
     
     // Load user data when component mounts
@@ -242,6 +345,18 @@ export default {
           console.error('Error checking pending reservations:', error);
           // Non-critical error, continue loading dashboard
         }
+        
+        // Fetch open restaurants
+        try {
+          loadingRestaurants.value = true;
+          const restaurants = await getOpenRestaurants();
+          openRestaurants.value = restaurants;
+        } catch (error) {
+          console.error('Error fetching open restaurants:', error);
+          // Non-critical error, continue loading dashboard
+        } finally {
+          loadingRestaurants.value = false;
+        }
       } catch (error) {
         console.error('Error loading user data:', error);
         errorMessage.value = 'Failed to load user data. Please try again.';
@@ -283,11 +398,16 @@ export default {
       user,
       isLoading,
       errorMessage,
-      searchQuery,
       quickActions,
       hasPendingReservation,
+      openRestaurants,
+      loadingRestaurants,
+      getRestaurantImage,
       logout,
-      toggleDropdown
+      toggleDropdown,
+      getReviewAuthor,
+      getReviewContent,
+      router
     };
   }
 };
@@ -310,5 +430,108 @@ export default {
   border-radius: 50%;
   background-color: #dc3545;
   display: block;
+}
+
+.no-restaurants {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  color: #777;
+}
+
+.no-restaurants i {
+  font-size: 48px;
+  color: #ccc;
+}
+
+/* Row-based Restaurant Styling */
+.restaurants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.restaurant-row {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 20px;
+}
+
+.restaurant-row:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.restaurant-image {
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.restaurant-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.restaurant-row:hover .restaurant-image img {
+  transform: scale(1.05);
+}
+
+.restaurant-details {
+  padding: 0 15px;
+}
+
+.restaurant-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.restaurant-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.restaurant-description {
+  margin: 10px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.reviews {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.review {
+  border-left: 3px solid #ff6b6b;
+  padding-left: 15px;
+}
+
+.review-author {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.review-content {
+  font-style: italic;
+  color: #555;
+  font-size: 14px;
 }
 </style>
