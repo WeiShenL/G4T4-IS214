@@ -6,10 +6,6 @@ This directory contains the configuration and setup files for the Kong API Gatew
 
 Kong serves as the API Gateway for our microservices architecture, providing:
 - Single entry point for all client requests
-- Service discovery
-- Rate limiting
-- Authentication (when configured)
-- Request routing
 - Load balancing
 
 ## Directory Structure
