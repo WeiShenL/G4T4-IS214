@@ -24,7 +24,7 @@ Our Kong setup consists of:
 
 ## Quick Start
 
-For a quick and easy setup, use the one-click setup script:
+For a quick and easy setup of Kong and other microservices together:
 
 ```bash
   cd backend
