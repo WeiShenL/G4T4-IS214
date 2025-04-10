@@ -50,11 +50,13 @@ client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 MESSAGE_TEMPLATES = {
     #US1
     "reservation.confirmation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been confirmed. See you soon!",
+    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
+
     #US2
     "reservation.cancellation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been canceled and a refund of ${refund_amount} has been processed. We look forward to seeing you again! Thank you!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process...",
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
-    "waitlist.notification": "Hi {username}! The restaurant {restaurant_name} is currently at full capacity. We've added you to the waitlist and will notify you when a table becomes available. Thank you for your patience!",
+    
     #US3
     "delivery.order.confirmation": "Hi there {username}! Your order (ID: {order_id}) has been confirmed for delivery. Thank you for ordering with us!",
     "delivery.order.accepted": "Hi there {customer_name}! Your order (ID: {order_id}) has been assigned a driver, {driver_name}. Thank you for ordering with us!",
