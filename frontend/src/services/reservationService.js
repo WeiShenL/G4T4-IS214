@@ -14,8 +14,8 @@ const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhos
 // API paths through Kong
 const RESERVATION_PATH = '/api/reservations';
 const ORDER_PATH = '/api/orders';
-const CANCEL_BOOKING_PATH = '/api/cancel';
 const ACCEPT_REALLOCATION_PATH = '/api/accept-reallocation';
+const REALLOCATE_PATH = '/api/reallocate';
 
 // get auth headers
 const getAuthHeaders = async () => {
@@ -26,34 +26,6 @@ const getAuthHeaders = async () => {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
-};
-
-// Create a reservation
-export const createReservation = async (reservationData) => {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_GATEWAY_URL}${RESERVATION_PATH}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(reservationData),
-    });
-    
-    const data = await response.json();
-    
-    if (data.code === 201) {
-      return {
-        success: true,
-        message: data.message,
-        data: data.data
-      };
-    } else {
-      throw new Error(data.message || 'Failed to create reservation');
-    }
-  } catch (error) {
-    console.error('Error creating reservation:', error);
-    throw error;
-  }
 };
 
 // Get user reservations
@@ -189,69 +161,30 @@ export const cancelReallocation = async (reservationId) => {
     
     const headers = await getAuthHeaders();
     
-    console.log(`Sending reallocation cancellation request to: ${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/reallocation/${reservationId}`);
+    console.log(`Sending reallocation decline request to: ${API_GATEWAY_URL}${ACCEPT_REALLOCATION_PATH}/decline/${reservationId}`);
     
-    const response = await fetch(`${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/reallocation/${reservationId}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${ACCEPT_REALLOCATION_PATH}/decline/${reservationId}`, {
       method: 'POST',
       headers
     });
     
     const data = await response.json();
-    console.log('Reallocation cancellation API response:', data);
+    console.log('Reallocation decline API response:', data);
     
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to cancel reallocated reservation');
+      throw new Error(data.error || 'Failed to decline reallocated reservation');
     }
     
     return {
       success: true,
-      message: data.message || 'Reallocated reservation cancelled successfully',
+      message: data.message || 'Reallocated reservation declined successfully',
       data: data
     };
   } catch (error) {
-    console.error('Error cancelling reallocated reservation:', error);
+    console.error('Error declining reallocated reservation:', error);
     return {
       success: false,
-      message: error.message || 'An error occurred during reallocation cancellation',
-      error: error
-    };
-  }
-};
-
-// Cancel a reservation
-export const cancelReservation = async (reservationId) => {
-  try {
-    if (!reservationId) {
-      throw new Error('Reservation ID is required');
-    }
-    
-    const headers = await getAuthHeaders();
-    
-    console.log(`Sending cancellation request to: ${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${reservationId}`);
-    
-    const response = await fetch(`${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${reservationId}`, {
-      method: 'POST',
-      headers
-    });
-    
-    const data = await response.json();
-    console.log('Cancellation API response:', data);
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to cancel reservation');
-    }
-    
-    return {
-      success: true,
-      message: data.message || 'Reservation cancelled successfully',
-      data: data
-    };
-  } catch (error) {
-    console.error('Error cancelling reservation:', error);
-    // Return a structured error response instead of throwing
-    return {
-      success: false,
-      message: error.message || 'An error occurred during cancellation',
+      message: error.message || 'An error occurred during reallocation decline',
       error: error
     };
   }

@@ -226,6 +226,8 @@ def update_reservation(reservation_id):
             update_data["order_id"] = data["order_id"]
         if "payment_id" in data:
             update_data["payment_id"] = data["payment_id"]
+        if "price" in data:
+            update_data["price"] = data["price"]
         
         # If no update data, return error
         if not update_data:
@@ -252,7 +254,8 @@ def update_reservation(reservation_id):
             "table_no": updated_response.data[0].get('table_no'),
             "status": updated_response.data[0].get('status'),
             "order_id": updated_response.data[0].get('order_id'),
-            "payment_id": updated_response.data[0].get('payment_id')
+            "payment_id": updated_response.data[0].get('payment_id'),
+            "price": updated_response.data[0].get('price')
         }), 200
     
     except Exception as e:

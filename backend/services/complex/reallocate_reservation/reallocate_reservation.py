@@ -21,6 +21,7 @@ USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:5000"
 RESERVATION_SERVICE_URL = os.environ.get("RESERVATION_SERVICE_URL", "http://reservation-service:5000")
 ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:5000")
 
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -147,27 +148,32 @@ def reallocate_reservation():
                 payment_id = None
                 if not orders:
                     print(f"No orders found for user {user_id}")
+                    price = None
                 else:
                     # or logic to deduct created_at with current date to retrieve the most recent order
                     most_recent_order = orders[0]  # API returns orders ordered by created_at desc
                     order_id = most_recent_order.get("order_id")
                     payment_id = most_recent_order.get("payment_id")
-                    print(f"Found order ID: {order_id} and payment ID: {payment_id} for user {user_id}")
+                    price = most_recent_order.get("order_price")
+                    print(f"Found order ID: {order_id}, payment ID: {payment_id}, and price: {price} for user {user_id}")
             except requests.exceptions.RequestException as e:
                 print(f"Error calling Orders API: {str(e)}")
                 order_id = None
                 payment_id = None
+                price = None
             
             reservation_update_data = {
                 "user_id": user_id,
                 "status": "Pending",
             }
             
-            # Include order_id and payment_id in the update if found
+            # Include order_id and payment_id and price in the update if found
             if order_id:
                 reservation_update_data["order_id"] = order_id
             if payment_id:
                 reservation_update_data["payment_id"] = payment_id
+            if price:
+                reservation_update_data["price"] = price
             
             reservation_response = requests.patch(
                 f"{RESERVATION_SERVICE_URL}/api/reservations/reallocate/{reservation_id}", 

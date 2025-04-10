@@ -113,7 +113,7 @@
                   <div class="row align-items-center">
                     <!-- Restaurant Image -->
                     <div class="col-md-3">
-                      <div class="restaurant-image" @click="router.push('/restaurant/' + restaurant.id)">
+                      <div class="restaurant-image">
                         <img :src="getRestaurantImage(index + 1)" alt="Restaurant image">
                       </div>
                     </div>

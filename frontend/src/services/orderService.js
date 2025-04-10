@@ -17,34 +17,6 @@ const getAuthHeaders = async () => {
   };
 };
 
-// Create a new order with Stripe payment ID
-export const createOrder = async (orderData) => {
-  try {
-    const headers = await getAuthHeaders();
-    
-    const response = await fetch(`${API_GATEWAY_URL}${ORDER_PATH}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(orderData),
-    });
-    
-    const data = await response.json();
-    
-    if (data.code === 201) {
-      return {
-        success: true,
-        message: data.message,
-        data: data.data
-      };
-    } else {
-      throw new Error(data.message || 'Failed to create order');
-    }
-  } catch (error) {
-    console.error('Error creating order:', error);
-    throw error;
-  }
-};
-
 // Get all orders for a specific user
 export const getUserOrders = async (userId) => {
   try {
