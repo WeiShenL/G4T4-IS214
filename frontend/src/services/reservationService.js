@@ -15,7 +15,6 @@ const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhos
 const RESERVATION_PATH = '/api/reservations';
 const ORDER_PATH = '/api/orders';
 const ACCEPT_REALLOCATION_PATH = '/api/accept-reallocation';
-const REALLOCATE_PATH = '/api/reallocate';
 
 // get auth headers
 const getAuthHeaders = async () => {
@@ -149,43 +148,5 @@ export const acceptReallocation = async (acceptData) => {
   } catch (error) {
     console.error('Error accepting reallocation:', error);
     throw error;
-  }
-};
-
-// Cancel a reallocation (give to next customer in waitlist)
-export const cancelReallocation = async (reservationId) => {
-  try {
-    if (!reservationId) {
-      throw new Error('Reservation ID is required');
-    }
-    
-    const headers = await getAuthHeaders();
-    
-    console.log(`Sending reallocation decline request to: ${API_GATEWAY_URL}${ACCEPT_REALLOCATION_PATH}/decline/${reservationId}`);
-    
-    const response = await fetch(`${API_GATEWAY_URL}${ACCEPT_REALLOCATION_PATH}/decline/${reservationId}`, {
-      method: 'POST',
-      headers
-    });
-    
-    const data = await response.json();
-    console.log('Reallocation decline API response:', data);
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to decline reallocated reservation');
-    }
-    
-    return {
-      success: true,
-      message: data.message || 'Reallocated reservation declined successfully',
-      data: data
-    };
-  } catch (error) {
-    console.error('Error declining reallocated reservation:', error);
-    return {
-      success: false,
-      message: error.message || 'An error occurred during reallocation decline',
-      error: error
-    };
   }
 };

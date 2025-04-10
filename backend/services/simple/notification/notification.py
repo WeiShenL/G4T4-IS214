@@ -54,7 +54,6 @@ MESSAGE_TEMPLATES = {
 
     #US2
     "reservation.cancellation": "Hi there {username}! Your reservation (ID: {reservation_id}) has been canceled and a refund of ${refund_amount} has been processed. We look forward to seeing you again! Thank you!",
-    "reservation.reservation.decline": "Hi there {username}! You have declined the table offer for Table {table_no}. A refund of ${refund_amount} has been processed if applicable. Thank you!",
     "reallocation.notice": "Hi there {username}! Table {table_no} is currently open, would you like to book it? If so, please click on this link: http://localhost:5173 to start the booking process!",
     "reallocation.confirmation": "Hi {username}, your reservation (ID: {reservation_id}) for Table {table_no} has been confirmed for {booking_time}. Thank you!",
     
@@ -214,7 +213,6 @@ def start_rabbitmq_consumer():
                 "Order_Confirmation": "order.confirmation",
                 "Reservation_Confirmation": "reservation.confirmation",
                 "Reservation_Cancellation": "reservation.cancellation",
-                "Reservation_Decline": "reservation.reservation.decline",
                 "Reallocation_Notice": "reallocation.notice",
                 "Reallocation_Confirmation": "reallocation.confirmation",
                 "Waitlist_Notification": "waitlist.notification",
