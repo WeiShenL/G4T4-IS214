@@ -37,7 +37,7 @@
               <h2>Restaurants</h2>
               <p>Discover and explore restaurants near you</p>
               
-              <!-- Mode Selection Buttons -->
+              <!-- Mode Selection Buttons (not implemented)
               <div class="mode-selection mt-3">
                 <button 
                   class="btn btn-lg me-2" 
@@ -53,7 +53,7 @@
                 >
                   <i class="fas fa-motorcycle me-2"></i>Delivery
                 </button>
-              </div>
+              </div> -->
               
               <!-- Mode Indicator -->
               <div class="mode-indicator mt-3" v-if="orderType === 'delivery'">

@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # app flies
 COPY . .
 
-CMD ["python", "accept_booking.py"] 
+CMD ["python", "accept_reallocation.py"] 

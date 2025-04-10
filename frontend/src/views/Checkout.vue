@@ -63,7 +63,10 @@
           <hr>
           <p class="mb-0">Payment ID: {{ paymentId }}</p>
           <div class="mt-3">
-            <button @click="goToReservations" class="btn btn-primary">
+            <button v-if="orderType === 'delivery'" @click="goToDeliveryOrdersPage" class="btn btn-primary">
+              <i class="fas fa-truck me-2"></i> View My Delivery Orders
+            </button>
+            <button v-else @click="goToReservations" class="btn btn-primary">
               <i class="fas fa-calendar-check me-2"></i> View My Reservations
             </button>
           </div>
@@ -305,6 +308,10 @@ export default {
 
     const goToReservations = () => {
       router.push('/reservations');
+    };
+    
+    const goToDeliveryOrdersPage = () => {
+      router.push('/delivery-orders');
     };
     
     // Set default reservation time to 1 hour from now
@@ -656,6 +663,7 @@ export default {
       calculateTotal,
       proceedToStripeCheckout,
       goToReservations,
+      goToDeliveryOrdersPage,
       logout,
       toggleDropdown
     };
