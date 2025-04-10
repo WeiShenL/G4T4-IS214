@@ -15,10 +15,9 @@
                 <span v-else>Loading...</span>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><router-link class="dropdown-item" to="/driver-profile"><i class="fas fa-user-cog"></i> My Profile</router-link></li>
-                <li><router-link class="dropdown-item" to="/driver-deliveries"><i class="fas fa-history"></i> Delivery History</router-link></li>
+                <li><router-link class="dropdown-item" to="/driver-dashboard"><i class="fas fa-user-cog"></i>My Dashboard</router-link></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="goHome"><i class="fas fa-sign-out-alt"></i> Return to Dashboard</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
               </ul>
             </div>
           </div>
