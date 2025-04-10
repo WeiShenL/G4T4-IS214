@@ -34,13 +34,13 @@ def geocode_address(address):
     #:param address: The address to geocode (e.g., "123 Test St").
     #:return: A string in the format "(latitude,longitude)", or None if geocoding fails.
     
-    # TODO: Hardcoded coordinates for common addresses in Singapore (change this)
+    # Hardcoded coordinates for common addresses in Singapore if API fails. (fallback)
     hardcoded_locations = {
-        "205 Hougang St 21": "1.3722,103.8869",
+        "30 Victoria St": "1.29548985,103.8520116901307",
         "973 Upper Serangoon Rd": "1.3738,103.8783",
-        "313 Orchard Road": "1.3019,103.8378",
-        "88 Tanjong Katong Rd": "1.3058,103.8969",
-        # Add more hardcoded locations as needed
+        "313 Orchard Road": "1.3010188,103.83850574470645",
+        "145 Syed Alwi Road": "1.3101174,103.8553229",
+        "Tampines Central 5": "1.3531766,103.9449275",
     }
     
     # Restrict results to Singapore only (this stupid thing is having seizures every time ffs)
@@ -73,9 +73,9 @@ def geocode_address(address):
                 print(f"Using hardcoded coordinates for {address}: {hardcoded_locations[address]}")
                 return hardcoded_locations[address]
             
-            # Fall back to default Singapore central location
-            print(f"Using default Singapore central location for {address}")
-            return "1.3521,103.8198"  # Singapore central coordinates
+            # Final fallback to 30 Victoria St coordinates
+            print(f"Using final fallback (30 Victoria St) coordinates for {address}")
+            return "1.29548985,103.8520116901307"  
         
     except Exception as e:
         print(f"Error during geocoding: {str(e)}")
@@ -84,9 +84,10 @@ def geocode_address(address):
         if address in hardcoded_locations:
             print(f"Using hardcoded coordinates for {address}: {hardcoded_locations[address]}")
             return hardcoded_locations[address]
-        # Fall back to default Singapore central location
-        print(f"Using default Singapore central location for {address}")
-        return "1.3521,103.8198"  # Singapore central coordinates
+            
+        # Final fallback to 30 Victoria St coordinates
+        print(f"Using final fallback (30 Victoria St) coordinates for {address}")
+        return "1.29548985,103.8520116901307"  
     
 def calculate_distance(lat1, lon1, lat2, lon2):
     #Calculate the distance between two GPS coordinates using the Haversine formula.
