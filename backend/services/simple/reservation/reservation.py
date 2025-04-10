@@ -17,6 +17,14 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
+@app.route("/api/reservation/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "reservation-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Retrieve all reservations
 @app.route("/api/reservations", methods=['GET'])
 def get_all_reservations():
@@ -278,7 +286,7 @@ def update_reservation(reservation_id):
         }), 500
 
 # Confirm booking (new route for accept_booking.py)
-@app.route('/reservation/reallocate_confirm_booking/<int:reservation_id>', methods=['PATCH'])
+@app.route('/api/reservation/reallocate_confirm_booking/<int:reservation_id>', methods=['PATCH'])
 def reallocate_confirm_booking(reservation_id):
     try:
         data = request.get_json()

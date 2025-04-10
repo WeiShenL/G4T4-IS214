@@ -17,6 +17,14 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
+@app.route("/api/order/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "order-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # create a new order with Stripe payment ID
 @app.route("/api/orders", methods=['POST'])
 def create_order():

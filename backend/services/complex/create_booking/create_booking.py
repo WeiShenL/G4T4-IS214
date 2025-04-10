@@ -27,6 +27,14 @@ app = Flask(__name__)
 # Allow CORS for all origins
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+@app.route("/api/create/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "create-booking-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
     """Publish a message to RabbitMQ"""
@@ -63,7 +71,7 @@ def publish_to_rabbitmq(routing_key, message):
         return False
 
 # order create first, once success 200 then call reservation
-@app.route('/create', methods=['POST'])
+@app.route('/api/create', methods=['POST'])
 def create_booking():
     try:
         # Get request data

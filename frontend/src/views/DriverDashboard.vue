@@ -5,7 +5,7 @@
     <div class="dashboard-header">
       <div class="container">
         <div class="d-flex justify-content-between align-items-center">
-          <router-link to="/" class="dashboard-logo">
+          <router-link to="/driver-dashboard" class="dashboard-logo">
             <span>FeastFinder</span>
           </router-link>
           <div class="dashboard-user">
@@ -135,6 +135,10 @@ import { useRouter } from 'vue-router';
 import { supabaseClient, signOut } from '@/services/supabase';
 import { loadGoogleMapsApi } from '@/services/googleMapsLoader';
 
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+const DELIVERY_MANAGEMENT_PATH = '/api/delivery-management';
+const DRIVER_DETAILS_PATH = '/api/driverdetails';
+
 export default {
   name: 'DriverDashboard',
   setup() {
@@ -199,7 +203,7 @@ export default {
         console.log('📍 Updated location via device Geolocation API');
 
         // 2. Now fetch the delivery management data
-        const deliveryUrl = `http://localhost:5014/delivery-management?driver_id=${driverId}`;
+        const deliveryUrl = `${API_GATEWAY_URL}${DELIVERY_MANAGEMENT_PATH}?driver_id=${driverId}`;
         console.log('👉 Fetching delivery data:', deliveryUrl);
         
         const response = await fetch(deliveryUrl);
@@ -499,7 +503,7 @@ export default {
         }
         
         console.log('Fetching driver stats from driverdetails msc');
-        const response = await fetch(`http://localhost:5012/driverdetails/${driverId}`);
+        const response = await fetch(`${API_GATEWAY_URL}${DRIVER_DETAILS_PATH}/${driverId}`);
         
         if (!response.ok) {
           console.error('Failed to fetch driver stats:', response.status);
@@ -541,7 +545,7 @@ export default {
             console.log(`Precise location obtained: ${latitude}, ${longitude}`);
 
             // Update driver location in driverdetail service
-            const response = await fetch(`http://localhost:5012/driverdetails/${driverId}/location`, {
+            const response = await fetch(`${API_GATEWAY_URL}${DRIVER_DETAILS_PATH}/${driverId}/location`, {
               method: "PATCH",
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 

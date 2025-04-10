@@ -3,8 +3,14 @@ import { loadStripe } from '@stripe/stripe-js';
 // Stripe public key from environment 
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
-// Backend API endpoints
-const PAYMENT_API_URL = 'http://localhost:5006/api/payment';
+// Get API gateway URL from environment variables
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+
+// API paths through Kong
+const PAYMENT_PATH = '/api/payment';
+
+// // Backend API endpoints
+// const PAYMENT_API_URL = 'http://localhost:5006/api/payment';
 
 // Stripe instance
 let stripePromise = null;
@@ -28,7 +34,7 @@ export const initStripe = () => {
  */
 export const createCheckoutSession = async (orderDetails, customerId, successUrl, cancelUrl) => {
   try {
-    const response = await fetch(`${PAYMENT_API_URL}/create-checkout-session`, {
+    const response = await fetch(`${API_GATEWAY_URL}${PAYMENT_PATH}/create-checkout-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderDetails, customerId, successUrl, cancelUrl })
@@ -56,7 +62,7 @@ export const createCheckoutSession = async (orderDetails, customerId, successUrl
  */
 export const verifyPayment = async (sessionId) => {
   try {
-    const response = await fetch(`${PAYMENT_API_URL}/verify-payment/${sessionId}`);
+    const response = await fetch(`${API_GATEWAY_URL}${PAYMENT_PATH}/verify-payment/${sessionId}`);
     const data = await response.json();
     
     if (data.code !== 200) {
@@ -79,7 +85,7 @@ export const verifyPayment = async (sessionId) => {
  */
 export const processRefund = async (paymentId, amount = null) => {
   try {
-    const response = await fetch(`${PAYMENT_API_URL}/refund`, {
+    const response = await fetch(`${API_GATEWAY_URL}${PAYMENT_PATH}/refund`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

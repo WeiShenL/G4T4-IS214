@@ -2,10 +2,20 @@
 import { supabaseClient } from './supabase';
 
 // base URLs for the API
-const RESERVATION_API_URL = 'http://localhost:5002/api';
-const CANCEL_BOOKING_URL = 'http://localhost:5008/cancel';
-const REALLOCATION_URL = 'http://localhost:5002/reservation/reallocate_confirm_booking';
-const ACCEPT_BOOKING_URL = 'http://localhost:5010/accept-booking';
+// const RESERVATION_API_URL = 'http://localhost:5002/api';
+// const CANCEL_BOOKING_URL = 'http://localhost:5008/cancel';
+// // const REALLOCATION_URL = 'http://localhost:5002/reservation/reallocate_confirm_booking';
+// const ACCEPT_REALLOCATION_URL = 'http://localhost:5010/accept-reallocation';
+
+
+// Get API gateway URL from environment variables
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+
+// API paths through Kong
+const RESERVATION_PATH = '/api/reservations';
+const ORDER_PATH = '/api/orders';
+const CANCEL_BOOKING_PATH = '/api/cancel';
+const ACCEPT_REALLOCATION_PATH = '/api/accept-reallocation';
 
 // get auth headers
 const getAuthHeaders = async () => {
@@ -23,7 +33,7 @@ export const createReservation = async (reservationData) => {
   try {
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${RESERVATION_API_URL}/reservations`, {
+    const response = await fetch(`${API_GATEWAY_URL}${RESERVATION_PATH}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(reservationData),
@@ -56,7 +66,7 @@ export const getUserReservations = async (userId) => {
     const headers = await getAuthHeaders();
     
     // Pass userId as a string
-    const response = await fetch(`${RESERVATION_API_URL}/reservations/user/${userId}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${RESERVATION_PATH}/user/${userId}`, {
       headers
     });
     
@@ -106,7 +116,7 @@ export const acceptReallocation = async (acceptData) => {
     console.log(`Accepting reallocation for reservation ID: ${reservationId}`);
     
     // Make a request to the order service to retrieve order details by user_id
-    const orderResponse = await fetch(`http://localhost:5004/api/orders/user/${acceptData.user_id}`);
+    const orderResponse = await fetch(`${API_GATEWAY_URL}${ORDER_PATH}/user/${acceptData.user_id}`);
     
     if (!orderResponse.ok) {
       throw new Error('Failed to retrieve order information');
@@ -132,7 +142,7 @@ export const acceptReallocation = async (acceptData) => {
       price = 0;
     }
     
-    // Prepare data for the accept-booking endpoint
+    // Prepare data for the accept-reallocation endpoint
     const bookingData = {
       reservation_id: reservationId,
       user_id: acceptData.user_id,
@@ -143,8 +153,8 @@ export const acceptReallocation = async (acceptData) => {
       booking_time: acceptData.booking_time
     };
     
-    // Send the data to the accept-booking endpoint
-    const response = await fetch(ACCEPT_BOOKING_URL, {
+    // Send the data to the accept-reallocation endpoint
+    const response = await fetch(`${API_GATEWAY_URL}${ACCEPT_REALLOCATION_PATH}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(bookingData)
@@ -204,9 +214,9 @@ export const cancelReservation = async (reservationId) => {
     
     const headers = await getAuthHeaders();
     
-    console.log(`Sending cancellation request to: ${CANCEL_BOOKING_URL}/${reservationId}`);
+    console.log(`Sending cancellation request to: ${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${reservationId}`);
     
-    const response = await fetch(`${CANCEL_BOOKING_URL}/${reservationId}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${reservationId}`, {
       method: 'POST',
       headers
     });

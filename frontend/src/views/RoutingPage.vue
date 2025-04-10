@@ -4,7 +4,7 @@
     <div class="dashboard-header">
       <div class="container">
         <div class="d-flex justify-content-between align-items-center">
-          <router-link to="/" class="dashboard-logo">
+          <router-link to="/driver-dashboard" class="dashboard-logo">
             <span>FeastFinder</span>
           </router-link>
           <div class="dashboard-user">
@@ -159,6 +159,13 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { loadGoogleMapsApi } from '@/services/googleMapsLoader';
 
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+const ACCEPT_ORDER_PATH = '/api/accept-order';
+const PICK_UP_ORDER_PATH = '/api/pick-up-order';
+const DELIVER_ORDER_PATH = '/api/deliver-order';
+const DELETE_GEOSPATIAL_PATH = '/api/delete-geospatial';
+const ORDER_PATH = '/api/orders';
+
 export default {
   name: 'RoutingPage',
   setup() {
@@ -248,7 +255,7 @@ export default {
               }
 
               // Trigger API
-              fetch('http://localhost:5015/accept-order', {
+              fetch(`${API_GATEWAY_URL}${ACCEPT_ORDER_PATH}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -339,7 +346,7 @@ export default {
             });
 
             // Call API to mark order as picked up
-            fetch('http://localhost:5015/pick-up-order', {
+            fetch(`${API_GATEWAY_URL}${PICK_UP_ORDER_PATH}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -367,7 +374,6 @@ export default {
 
 
     // complete order
-    // complete order
     const completeOrder = () => {
       orderCompleted.value = true;
       
@@ -382,7 +388,7 @@ export default {
       const driverId = routingData.value.driver.id;
       
       // 1. First, update driver stats through deliver-order API
-      fetch('http://localhost:5015/deliver-order', {
+      fetch(`${API_GATEWAY_URL}${DELIVER_ORDER_PATH}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -402,7 +408,7 @@ export default {
           console.log('Order delivered successfully, driver stats updated:', data);
           
           // 2. Then delete the geospatial data
-          return fetch(`http://localhost:5013/delete-geospatial/${orderId}`, {
+          return fetch(`${API_GATEWAY_URL}${DELETE_GEOSPATIAL_PATH}/${orderId}`, {
             method: 'DELETE'
           });
         })
@@ -418,7 +424,7 @@ export default {
           console.log('Geospatial data deleted:', data);
           
           // 3. Finally, delete the order completely
-          return fetch(`http://localhost:5004/api/orders/${orderId}`, {
+          return fetch(`${API_GATEWAY_URL}${ORDER_PATH}/${orderId}`, {
             method: 'DELETE'
           });
         })

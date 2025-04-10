@@ -4,7 +4,7 @@
       <div class="dashboard-header">
         <div class="container">
           <div class="d-flex justify-content-between align-items-center">
-            <router-link to="/" class="dashboard-logo">
+            <router-link to="/customer-dashboard" class="dashboard-logo">
               <span>FeastFinder</span>
             </router-link>
             <div class="dashboard-user">
@@ -160,14 +160,14 @@
                         Accept & Book This Table
                       </button>
                       
-                      <button 
+                      <!-- <button 
                         class="btn btn-lg btn-outline-danger" 
                         @click="declineBooking"
                         :disabled="isAccepting"
                       >
                         <i class="fas fa-times-circle me-2"></i>
                         Decline Offer
-                      </button>
+                      </button> -->
                     </div>
                   </div>
                 </div>

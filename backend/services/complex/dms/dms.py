@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 import requests
 from dotenv import load_dotenv
-
+from datetime import datetime
 load_dotenv()
 
 app = Flask(__name__)
@@ -22,7 +22,7 @@ def get_driver_address(driver_id):
     #:param driver_id: The ID of the driver.
     #:return: The driver's address (string) or None if not found.
     try:
-        driver_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
+        driver_response = requests.get(f"{DRIVER_SERVICE_URL}/api/driver/{driver_id}")
         if driver_response.status_code == 200:
             driver_data = driver_response.json().get("data", {})
             return driver_data.get("street_address", None)  # key for the driver's address
@@ -33,8 +33,15 @@ def get_driver_address(driver_id):
         print(f"Error fetching driver address: {str(e)}")
         return None
 
-
-@app.route("/delivery-management", methods=['GET'])
+@app.route("/api/dms/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "dms-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
+@app.route("/api/delivery-management", methods=['GET'])
 def get_delivery_management_data():
     try:
         # Get driver_id from query parameter (required)
@@ -43,7 +50,7 @@ def get_delivery_management_data():
             return jsonify({"code": 400, "message": "Missing driver_id."}), 400
 
         # Fetch the logged-in driver's details
-        driver_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
+        driver_response = requests.get(f"{DRIVER_SERVICE_URL}/api/driver/{driver_id}")
         if driver_response.status_code != 200:
             return jsonify({"code": 404, "message": "Driver not found."}), 404
         driver_data = driver_response.json().get("data", {})
@@ -111,7 +118,7 @@ def get_delivery_management_data():
         restaurant_list = list(restaurants.values())
 
         # Fetch detailed driver details from the driverdetails service
-        detailed_driver_response = requests.get(f"{DRIVERDETAIL_SERVICE_URL}/driverdetails/{driver_id}")
+        detailed_driver_response = requests.get(f"{DRIVERDETAIL_SERVICE_URL}/api/driverdetails/{driver_id}")
         if detailed_driver_response.status_code == 404:  # Driver details not found, create a new record
             print(f"No driver details found for driver_id: {driver_id}. Creating a new record.")
 
@@ -126,7 +133,7 @@ def get_delivery_management_data():
                 "live_location": driver_address,
                 "availability": True
             }
-            create_response = requests.post(f"{DRIVERDETAIL_SERVICE_URL}/driverdetails", json=new_driver_payload)
+            create_response = requests.post(f"{DRIVERDETAIL_SERVICE_URL}/api/driverdetails", json=new_driver_payload)
             if create_response.status_code not in [200, 201]:
                 print(f"Error creating driver details: {create_response.status_code}, {create_response.text}")
                 return jsonify({"code": 500, "message": "Failed to create driver details."}), 500
@@ -168,7 +175,7 @@ def get_delivery_management_data():
                 "restaurants": restaurant_list
             }
         }
-        geo_response = requests.post(f"{GEOCODING_SERVICE_URL}/nearby-restaurants", json=geo_payload)
+        geo_response = requests.post(f"{GEOCODING_SERVICE_URL}/api/nearby-restaurants", json=geo_payload)
         if geo_response.status_code != 200:
             print(f"Error calling geocoding service: {geo_response.status_code}, {geo_response.text}")
             return jsonify({"code": 500, "message": "Failed to fetch nearby restaurants."}), 500

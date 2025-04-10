@@ -4,7 +4,7 @@
       <div class="dashboard-header">
         <div class="container">
           <div class="d-flex justify-content-between align-items-center">
-            <router-link to="/" class="dashboard-logo">
+            <router-link to="/customer-dashboard" class="dashboard-logo">
               <span>FeastFinder</span>
             </router-link>
             <div class="dashboard-user">
@@ -177,6 +177,9 @@ import { getUserReservations } from '@/services/reservationService';
 import { getAllRestaurants } from '@/services/restaurantService';
 import { initStripe, processRefund } from '@/services/stripeService';
 import { Modal } from 'bootstrap'; 
+
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+const CANCEL_BOOKING_PATH = '/api/cancel';
 
 export default {
   name: 'CustomerReservations',
@@ -377,7 +380,7 @@ export default {
         console.log('Starting cancellation process for reservation:', selectedReservation.value.reservation_id);
         
         // Call the cancel_booking microservice
-        const response = await fetch(`http://localhost:5008/cancel/${selectedReservation.value.reservation_id}`, {
+        const response = await fetch(`${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${selectedReservation.value.reservation_id}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

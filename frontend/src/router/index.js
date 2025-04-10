@@ -9,7 +9,7 @@ import DriverDashboard from '@/views/DriverDashboard.vue';
 import Restaurants from '@/views/Restaurants.vue'; 
 import RestaurantMenu from '@/views/RestaurantMenu.vue';
 import Checkout from '@/views/Checkout.vue';
-import AcceptBooking from '@/views/AcceptBooking.vue'; 
+import AcceptReallocation from '@/views/AcceptReallocation.vue'; 
 import RoutingPage from '@/views/RoutingPage.vue';
 
 const routes = [
@@ -71,9 +71,9 @@ const routes = [
     meta: { requiresAuth: true, userType: 'customer' }
   },
   {
-    path: '/accept-booking',
-    name: 'AcceptBooking',
-    component: AcceptBooking,
+    path: '/accept-reallocation',
+    name: 'AcceptReallocation',
+    component: AcceptReallocation,
     meta: { requiresAuth: true, userType: 'customer' }
   },
   {

@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
-
+from datetime import datetime
 load_dotenv()
 
 app = Flask(__name__)
@@ -15,6 +15,14 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
+@app.route("/api/menu/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "menu-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # retrieve menu items for a specific restaurant
 @app.route("/api/menu/<int:restaurant_id>", methods=['GET'])
 def get_restaurant_menu(restaurant_id):

@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -15,8 +16,16 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
+@app.route("/api/driver/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "driver-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Get driver by ID
-@app.route("/driver/<string:driver_id>", methods=['GET'])
+@app.route("/api/driver/<string:driver_id>", methods=['GET'])
 def get_driver(driver_id):
     try:
         # Query the driver_profiles table using the provided driver_id

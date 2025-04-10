@@ -8,6 +8,7 @@ import random
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +27,14 @@ ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:50
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+@app.route("/api/accept-reallocation/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "accept-reallocation-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
     """Publish a message to RabbitMQ"""
@@ -61,8 +70,8 @@ def publish_to_rabbitmq(routing_key, message):
         print(f"Error publishing to RabbitMQ: {e}")
         return False
 
-@app.route('/accept-booking', methods=['POST'])
-def accept_booking():
+@app.route('/api/accept-reallocation', methods=['POST'])
+def accept_reallocation():
     try:
         # Parse incoming JSON data
         data = request.get_json()
@@ -107,7 +116,7 @@ def accept_booking():
                 
             # Update the reservation by calling the reservation.py service
             update_response = requests.patch(
-                f"{RESERVATION_SERVICE_URL}/reservation/reallocate_confirm_booking/{reservation_id}",
+                f"{RESERVATION_SERVICE_URL}/api/reservation/reallocate_confirm_booking/{reservation_id}",
                 json=update_payload
             )
             update_response.raise_for_status()
@@ -199,10 +208,10 @@ def accept_booking():
             }), 207
 
     except Exception as e:
-        print(f"Error in accept_booking: {str(e)}")
-        return jsonify({"error": f"Error processing booking acceptance: {str(e)}"}), 500
+        print(f"Error in accept_reallocation: {str(e)}")
+        return jsonify({"error": f"Error processing reallocation acceptance: {str(e)}"}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5010))
-    print(f"Starting accept_booking service on port {port}...")
+    print(f"Starting accept_reallocation service on port {port}...")
     app.run(host="0.0.0.0", port=port, debug=True)

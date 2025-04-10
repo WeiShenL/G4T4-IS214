@@ -6,6 +6,7 @@ from flask_cors import CORS
 import pika
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -23,6 +24,14 @@ ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:50
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+@app.route("/api/reallocate/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "reallocate-reservation-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
     """Publish a message to RabbitMQ"""
@@ -58,7 +67,7 @@ def publish_to_rabbitmq(routing_key, message):
         print(f"Error publishing to RabbitMQ: {e}")
         return False
 
-@app.route('/reallocate', methods=['POST'])
+@app.route('/api/reallocate', methods=['POST'])
 def reallocate_reservation():
     try:
         data = request.get_json()

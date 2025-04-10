@@ -6,6 +6,7 @@ from supabase import create_client
 from math import radians, sin, cos, sqrt, atan2
 import requests
 import time
+from datetime import datetime
 
 load_dotenv()
 
@@ -18,7 +19,14 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
+@app.route("/api/geo/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "geo-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Geocoding function
 def geocode_address(address):
 
@@ -91,7 +99,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
 
-@app.route("/nearby-restaurants", methods=['POST'])
+@app.route("/api/nearby-restaurants", methods=['POST'])
 def find_nearby_restaurants():
     
     #Find restaurants within a specified radius of the driver's location.
@@ -229,7 +237,7 @@ def find_nearby_restaurants():
         return jsonify({"code": 500, "message": "An error occurred while processing the request."}), 500
     
 # delete by id
-@app.route("/delete-geospatial/<string:order_id>", methods=['DELETE'])
+@app.route("/api/delete-geospatial/<string:order_id>", methods=['DELETE'])
 def delete_geospatial(order_id):
     """
     Deletes a record from the geospatial table based on the order_id.

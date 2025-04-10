@@ -1,7 +1,10 @@
 import { supabaseClient } from './supabase';
 
-// Base URL for the API
-const ORDER_API_URL = 'http://localhost:5004/api';
+// Get API gateway URL from environment variables
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+
+// API paths through Kong
+const ORDER_PATH = '/api/orders';
 
 // Get auth headers
 const getAuthHeaders = async () => {
@@ -19,7 +22,7 @@ export const createOrder = async (orderData) => {
   try {
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${ORDER_API_URL}/orders`, {
+    const response = await fetch(`${API_GATEWAY_URL}${ORDER_PATH}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(orderData),
@@ -51,7 +54,7 @@ export const getUserOrders = async (userId) => {
     
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${ORDER_API_URL}/orders/user/${userId}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${ORDER_PATH}/user/${userId}`, {
       headers
     });
     
@@ -84,7 +87,7 @@ export const getUserOrdersByType = async (userId, orderType) => {
     const headers = await getAuthHeaders();
     
     // Use the orders api to get all orders of a specific type
-    const response = await fetch(`${ORDER_API_URL}/orders/type/${orderType}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${ORDER_PATH}/type/${orderType}`, {
       headers
     });
     

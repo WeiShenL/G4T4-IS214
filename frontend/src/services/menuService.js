@@ -1,7 +1,10 @@
 import { supabaseClient } from './supabase';
 
-// Base URLs for the API
-const MENU_API_URL = 'http://localhost:5003/api';
+// Get API gateway URL from environment variables
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+
+// API paths through Kong
+const MENU_PATH = '/api/menu';
 
 // Get auth headers
 const getAuthHeaders = async () => {
@@ -17,7 +20,7 @@ const getAuthHeaders = async () => {
 // Get menu items for a specific restaurant
 export const getRestaurantMenu = async (restaurantId) => {
   try {
-    const response = await fetch(`${MENU_API_URL}/menu/${restaurantId}`);
+    const response = await fetch(`${API_GATEWAY_URL}${MENU_PATH}/${restaurantId}`);
     const data = await response.json();
     
     if (data.code === 200) {
@@ -36,7 +39,7 @@ export const getRestaurantMenu = async (restaurantId) => {
 // Get specific menu item by ID --> NOT USED AS OF NOW
 export const getMenuItemById = async (menuId) => {
   try {
-    const response = await fetch(`${MENU_API_URL}/menu/item/${menuId}`);
+    const response = await fetch(`${API_GATEWAY_URL}${MENU_PATH}/item/${menuId}`);
     const data = await response.json();
     
     if (data.code === 200) {

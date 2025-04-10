@@ -1,11 +1,13 @@
 // import Supabase client 
 import { supabaseClient } from './supabase';
 
-// base URLs for the API
-const RESTAURANT_API_URL = 'http://localhost:5001/api';
-const RESERVATION_API_URL = 'http://localhost:5002/api';
-const CANCEL_BOOKING_URL = 'http://localhost:5008/cancel';
+// Get API gateway URL from environment variables
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
 
+// API paths through Kong
+const RESTAURANT_PATH = '/api/restaurants';
+const RESERVATION_PATH = '/api/reservations';
+const CANCEL_BOOKING_PATH = '/api/cancel';
 
 // get auth headers
 const getAuthHeaders = async () => {
@@ -21,7 +23,7 @@ const getAuthHeaders = async () => {
 // Get all restaurants
 export const getAllRestaurants = async () => {
   try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants`);
+    const response = await fetch(`${API_GATEWAY_URL}${RESTAURANT_PATH}`);
     const data = await response.json();
     
     if (data.code === 200) {
@@ -38,7 +40,7 @@ export const getAllRestaurants = async () => {
 // Get restaurant by ID
 export const getRestaurantById = async (id) => {
   try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/${id}`);
+    const response = await fetch(`${API_GATEWAY_URL}${RESTAURANT_PATH}/${id}`);
     const data = await response.json();
     
     if (data.code === 200) {
@@ -59,7 +61,7 @@ export const createReservation = async (reservationData) => {
   try {
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${RESERVATION_API_URL}/reservations`, {
+    const response = await fetch(`${API_GATEWAY_URL}${RESERVATION_PATH}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(reservationData),
@@ -92,7 +94,7 @@ export const getUserReservations = async (userId) => {
     const headers = await getAuthHeaders();
     
     // Pass userId as a string
-    const response = await fetch(`${RESERVATION_API_URL}/reservations/user/${userId}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${RESERVATION_PATH}/user/${userId}`, {
       headers
     });
     
@@ -120,9 +122,9 @@ export const cancelReservation = async (reservationId) => {
     
     const headers = await getAuthHeaders();
     
-    console.log(`Sending cancellation request to: ${CANCEL_BOOKING_URL}/${reservationId}`);
+    console.log(`Sending cancellation request to: ${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${reservationId}`);
     
-    const response = await fetch(`${CANCEL_BOOKING_URL}/${reservationId}`, {
+    const response = await fetch(`${API_GATEWAY_URL}${CANCEL_BOOKING_PATH}/${reservationId}`, {
       method: 'POST',
       headers
     });
@@ -153,7 +155,7 @@ export const cancelReservation = async (reservationId) => {
 // this is for filtering (might not need though)
 export const getRestaurantsByAvailability = async (availability) => {
   try {
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/${availability}`);
+    const response = await fetch(`${API_GATEWAY_URL}${RESTAURANT_PATH}/availability/${availability}`);
     const data = await response.json();
     if (data.code === 200) {
       return data.data.restaurants;
@@ -172,7 +174,7 @@ export const getRestaurantsByAvailability = async (availability) => {
 export const getOpenRestaurants = async () => {
   try {
     // Use the existing availability endpoint with parameter 1 (for open)
-    const response = await fetch(`${RESTAURANT_API_URL}/restaurants/availability/1`);
+    const response = await fetch(`${API_GATEWAY_URL}${RESTAURANT_PATH}/availability/1`);
     const data = await response.json();
     
     if (data.code === 200) {

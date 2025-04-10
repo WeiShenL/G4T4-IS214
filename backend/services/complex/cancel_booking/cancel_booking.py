@@ -6,7 +6,7 @@ from flask_cors import CORS
 import pika
 import os
 from dotenv import load_dotenv
-
+from datetime import datetime
 # Load environment variables
 load_dotenv()
 
@@ -26,6 +26,14 @@ REALLOCATE_RESERVATION_SERVICE_URL = os.environ.get("REALLOCATE_RESERVATION_SERV
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+@app.route("/api/cancel/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "cancel-booking-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
 
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
@@ -62,7 +70,7 @@ def publish_to_rabbitmq(routing_key, message):
         print(f"Error publishing to RabbitMQ: {e}")
         return False
 
-@app.route('/cancel/<int:reservation_id>', methods=['POST'])
+@app.route('/api/cancel/<int:reservation_id>', methods=['POST'])
 def process_cancellation(reservation_id):
     # Call reservation.py to cancel the reservation
     # this clears the reservation fields, nullify fields
@@ -149,7 +157,7 @@ def process_cancellation(reservation_id):
         
         # Trigger reallocation
         reallocation_data = {"reservation_id": reservation_id, "restaurant_id": restaurant_id}
-        requests.post(f"{REALLOCATE_RESERVATION_SERVICE_URL}/reallocate", json=reallocation_data)
+        requests.post(f"{REALLOCATE_RESERVATION_SERVICE_URL}/api/reallocate", json=reallocation_data)
         
         return jsonify({
             "message": "Reservation cancelled and notification sent, and reallocation triggered.",

@@ -23,6 +23,14 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
+@app.route("/api/payment/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "payment-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Process a refund
 @app.route("/api/payment/refund", methods=['POST'])
 def process_refund():

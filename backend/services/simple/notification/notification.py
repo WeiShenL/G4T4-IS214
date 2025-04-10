@@ -25,6 +25,14 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+@app.route("/api/notification/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "notification-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
 # Supabase configuration
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
@@ -238,11 +246,6 @@ def start_rabbitmq_consumer():
         except Exception as e:
             logging.error(f"Unexpected error in RabbitMQ consumer: {e}")
             time.sleep(5)
-
-# Health check route
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "Notification service running"}), 200
 
 if __name__ == '__main__':
     # Start RabbitMQ consumer in a separate thread

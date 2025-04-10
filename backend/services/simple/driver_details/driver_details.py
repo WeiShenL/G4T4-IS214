@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 from uuid import UUID
 import requests
-
+from datetime import datetime
 
 load_dotenv()
 
@@ -19,9 +19,15 @@ supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
 
+@app.route("/api/driverdetails/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "driver-details-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
 
-
-@app.route("/driverdetails/<uuid:driver_id>", methods=['GET'])
+@app.route("/api/driverdetails/<uuid:driver_id>", methods=['GET'])
 def get_driver_details_by_id(driver_id):
     """
     Retrieve driver details for a specific driver_id from Supabase.
@@ -80,7 +86,7 @@ def get_driver_details_by_id(driver_id):
         ), 500
     
 
-@app.route("/driverdetails/<uuid:driver_id>", methods=['PATCH'])
+@app.route("/api/driverdetails/<uuid:driver_id>", methods=['PATCH'])
 def update_driver_availability(driver_id):
     """
     Update driver availability for a specific driver_id.
@@ -133,7 +139,7 @@ def update_driver_availability(driver_id):
         ), 500
 
 
-@app.route("/driverdetails/<uuid:driver_id>/complete-delivery", methods=['PATCH'])
+@app.route("/api/driverdetails/<uuid:driver_id>/complete-delivery", methods=['PATCH'])
 def update_delivery_completion(driver_id):
     """
     Update driver's total deliveries and earnings when a delivery is completed.
@@ -196,7 +202,7 @@ def update_delivery_completion(driver_id):
         ), 500
 
 # update live location directly using GPS coordinates from the browser (finally...)
-@app.route("/driverdetails/<uuid:driver_id>/location", methods=['PATCH'])
+@app.route("/api/driverdetails/<uuid:driver_id>/location", methods=['PATCH'])
 def update_driver_location(driver_id):
     """
     Update driver's location directly using GPS coordinates from the browser

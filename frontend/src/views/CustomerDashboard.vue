@@ -4,13 +4,13 @@
     <div class="dashboard-header">
       <div class="container">
         <div class="d-flex justify-content-between align-items-center">
-          <router-link to="/" class="dashboard-logo">
+          <router-link to="/customer-dashboard" class="dashboard-logo">
             <span>FeastFinder</span>
           </router-link>
           <div class="dashboard-user d-flex align-items-center">
             <!-- Notification Bell Icon -->
             <div class="position-relative me-3" v-if="hasPendingReservation">
-              <router-link to="/accept-booking" class="notification-bell">
+              <router-link to="/accept-reallocation" class="notification-bell">
                 <i class="fas fa-bell text-warning"></i>
                 <span class="notification-badge"></span>
               </router-link>
@@ -24,7 +24,7 @@
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><router-link class="dropdown-item" to="/reservations"><i class="fas fa-calendar-check"></i> My Reservations</router-link></li>
                 <li><router-link class="dropdown-item" to="/delivery-orders"><i class="fas fa-truck"></i> My Delivery Orders</router-link></li>
-                <li v-if="hasPendingReservation"><router-link class="dropdown-item text-warning" to="/accept-booking"><i class="fas fa-bell"></i> Pending Table Offer</router-link></li>
+                <li v-if="hasPendingReservation"><router-link class="dropdown-item text-warning" to="/accept-reallocation"><i class="fas fa-bell"></i> Pending Table Offer</router-link></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" @click.prevent="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
               </ul>
@@ -46,7 +46,7 @@
               <!-- Pending Reservation Alert -->
               <div v-if="hasPendingReservation" class="alert alert-warning mt-3">
                 <i class="fas fa-bell me-2"></i> You have a pending table offer! 
-                <router-link to="/accept-booking" class="alert-link">View details</router-link>
+                <router-link to="/accept-reallocation" class="alert-link">View details</router-link>
               </div>
             </div>
           </div>
@@ -325,7 +325,7 @@ export default {
           id: profileData.id
         };
         
-        // Store user information in localStorage for other components
+        // Store user information in `local`Storage for other components
         localStorage.setItem('user_id', profileData.id);
         localStorage.setItem('user_name', profileData.customer_name);
         localStorage.setItem('user_phone', profileData.phone_number);

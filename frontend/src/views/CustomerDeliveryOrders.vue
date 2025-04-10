@@ -4,7 +4,7 @@
       <div class="dashboard-header">
         <div class="container">
           <div class="d-flex justify-content-between align-items-center">
-            <router-link to="/" class="dashboard-logo">
+            <router-link to="/customer-dashboard" class="dashboard-logo">
               <span>FeastFinder</span>
             </router-link>
             <div class="dashboard-user">

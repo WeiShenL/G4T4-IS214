@@ -4,7 +4,7 @@
     <div class="dashboard-header">
       <div class="container">
         <div class="d-flex justify-content-between align-items-center">
-          <router-link to="/" class="dashboard-logo">
+          <router-link to="/customer-dashboard" class="dashboard-logo">
             <span>FeastFinder</span>
           </router-link>
           <div class="dashboard-user">
@@ -183,7 +183,7 @@
                     min="1"
                     required
                   >
-                  <small class="text-muted">Leave empty for automatic assignmen</small>
+                  <small class="text-muted">Leave empty for automatic assignment</small>
                 </div>
                 
                 <div class="mb-3">
@@ -271,6 +271,10 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { getCurrentUser, signOut, supabaseClient } from '@/services/supabase';
 import { initStripe, createCheckoutSession, verifyPayment } from '@/services/stripeService';
+
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+const USER_PATH = '/api/user';
+const CREATE_BOOKING_PATH = '/api/create';
 
 export default {
   data() {
@@ -404,7 +408,7 @@ export default {
       if (storedOrderType === 'delivery' && user.value && user.value.id) {
         try {
           // Call the user msc to get address details
-          const response = await fetch(`http://localhost:5000/api/user/${user.value.id}`);
+          const response = await fetch(`${API_GATEWAY_URL}${USER_PATH}/${user.value.id}`);
           const userData = await response.json();
           
           if (userData.code === 200 && userData.data) {
@@ -568,7 +572,7 @@ export default {
         };
 
         console.log('Creating booking with data:', bookingData);
-        const bookingResponse = await fetch('http://localhost:5007/create', {
+        const bookingResponse = await fetch(`${API_GATEWAY_URL}${CREATE_BOOKING_PATH}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

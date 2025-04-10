@@ -6,6 +6,7 @@ from flask_cors import CORS
 import pika
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +26,15 @@ DRIVER_DETAILS_SERVICE_URL = os.environ.get("DRIVER_DETAILS_SERVICE_URL", "http:
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+@app.route("/api/driver-status/health", methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "service": "driver-status-service",
+        "timestamp": datetime.now().isoformat()
+    }), 200
+    
+    
 # Publish message to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
     """Publish a message to RabbitMQ"""
@@ -60,7 +70,7 @@ def publish_to_rabbitmq(routing_key, message):
         print(f"Error publishing to RabbitMQ: {e}")
         return False
 
-@app.route("/accept-order", methods=['POST'])
+@app.route("/api/accept-order", methods=['POST'])
 def accept_order():
     try:
         # Parse input
@@ -73,14 +83,14 @@ def accept_order():
 
         # Update Driver Availability
         driver_response = requests.patch(
-            f"{DRIVER_DETAILS_SERVICE_URL}/driverdetails/{driver_id}",
+            f"{DRIVER_DETAILS_SERVICE_URL}/api/driverdetails/{driver_id}",
             json={"availability": False}
         )
         if driver_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to update driver availability."}), 500
         
         # Fetch driver profile to get driver information
-        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
+        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/api/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
 
@@ -125,7 +135,7 @@ def accept_order():
         return jsonify({"code": 500, "message": "An error occurred while accepting the order."}), 500
     
     
-@app.route("/pick-up-order", methods=['POST'])
+@app.route("/api/pick-up-order", methods=['POST'])
 def pick_up_order():
     try:
         # Parse input
@@ -137,7 +147,7 @@ def pick_up_order():
             return jsonify({"code": 400, "message": "Missing driver_id or order_id."}), 400
         
         # Fetch driver profile to get driver information
-        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
+        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/api/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
 
@@ -183,7 +193,7 @@ def pick_up_order():
     
     
 
-@app.route("/deliver-order", methods=['POST'])
+@app.route("/api/deliver-order", methods=['POST'])
 def deliver_order():
     try:
         # Parse input
@@ -196,7 +206,7 @@ def deliver_order():
 
         # Step 1: Update Driver Availability
         driver_response = requests.patch(
-            f"{DRIVER_DETAILS_SERVICE_URL}/driverdetails/{driver_id}",
+            f"{DRIVER_DETAILS_SERVICE_URL}/api/driverdetails/{driver_id}",
             json={"availability": True}
         )
         if driver_response.status_code != 200:
@@ -204,7 +214,7 @@ def deliver_order():
             
         # Step 1.5: Update driver's delivery counts and earnings
         delivery_stats_response = requests.patch(
-            f"{DRIVER_DETAILS_SERVICE_URL}/driverdetails/{driver_id}/complete-delivery"
+            f"{DRIVER_DETAILS_SERVICE_URL}/api/driverdetails/{driver_id}/complete-delivery"
         )
         if delivery_stats_response.status_code != 200:
             print(f"Warning: Failed to update driver delivery stats: {delivery_stats_response.text}")
@@ -213,7 +223,7 @@ def deliver_order():
             print("Successfully updated driver delivery stats")
         
         # step 2 Fetch driver profile to get driver information
-        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/driver/{driver_id}")
+        driver_profile_response = requests.get(f"{DRIVER_SERVICE_URL}/api/driver/{driver_id}")
         if driver_profile_response.status_code != 200:
             return jsonify({"code": 500, "message": "Failed to fetch driver profile."}), 500
 
