@@ -1,7 +1,16 @@
 # G4T4-IS214
 
 ## FeastFinder
-![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/FeastFinder.png?token=GHSAT0AAAAAAC7CYRFLZLZXOXL2HL5UBVLYZ7YMALQ)
+<p align="center">
+<img width="500" height="300" alt="FeastFinder" src="https://github.com/user-attachments/assets/fa098713-e1b3-4509-b2e6-3423d38aabb8" />
+<img width="500" height="300" alt="Screenshot 2025-04-12 at 10 59 35 AM" src="https://github.com/user-attachments/assets/dfb21882-f242-4c4e-a654-eb95cd137a93" />
+</p>
+
+Restaurant table booking with waitlist reallocation and delivery.
+
+## Problem Statement
+
+Restaurants face significant revenue loss due to last-minute cancellations, inefficient seat allocation, and high delivery platform commissions. There is a need for an integrated reservation and delivery management system for restaurants.
 
 ## Prerequisites
 
@@ -42,7 +51,8 @@ npm run dev
 This will launch the application, typically at [http://localhost:5173](http://localhost:5173).
 
 ## Technical Architecture Diagram
-![image](https://raw.githubusercontent.com/WeiShenL/G4T4-IS214/refs/heads/main/assets/Screenshot%202025-04-11%20at%207.25.24%E2%80%AFAM.png?token=GHSAT0AAAAAAC7CYRFKXP36KBIBTS6DKPCSZ7YMGOA)
+<img width="809" alt="Screenshot 2025-04-11 at 7 25 24 AM" src="https://github.com/user-attachments/assets/c41e08a8-5bb9-4c39-b9f0-4b1fe3d71d7e" />
+
 
 ## Frameworks and Databases Utilised
 <p align="center"><strong>Microservices and UI</strong></p>
